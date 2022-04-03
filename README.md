@@ -8,3 +8,4 @@ siebenuhr2022
 
 ###  More than just a clock, SEIBENUHR becomes a centerpiece for your home, providing feedback through color and animation. It’s able to react to motion, daytime, the weather and can even integrate seamlessly with Home Assistant to provide alarms and visual notifications.
 
+![clock lit up](https://github.com/somebox/siebenuhr2022/raw/main/rsc/images/Siebenuhr_BW-006_framed.jpg)
