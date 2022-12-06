@@ -5,6 +5,8 @@
 
 */
 #include <Arduino.h>
+
+#include "Controller.h"
 #include "DisplayDriver.h"
 #include <GradientPalettes.h>
 #include "SPIFFS.h"
@@ -22,43 +24,43 @@ DisplayDriver::~DisplayDriver () {
   // destructor
 }
 
-uint16_t DisplayDriver::setup() {
-  EEPROM.begin(512);
-  // check if the serial number is already in the EEPROM. If not, this means
-  // that this siebenuhr has never run before
-  uint8_t serialNumber_lowByte = read_from_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE);
-  uint8_t serialNumber_highByte = read_from_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE);
-  uint16_t serialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
-  // according to the ARDUINO documentation, EEPROM.read() returns 255 if no
-  // has been written to the EEPROM before. therefore the siebenuhrs EEPROM
-  // needs to be initialized with the default values and the serial number
+uint16_t DisplayDriver::setup(bool isFirstTimeSetup) {
+  // EEPROM.begin(512);
+  // // check if the serial number is already in the EEPROM. If not, this means
+  // // that this siebenuhr has never run before
+  // uint8_t serialNumber_lowByte = read_from_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE);
+  // uint8_t serialNumber_highByte = read_from_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE);
+  // uint16_t serialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
+  // // according to the ARDUINO documentation, EEPROM.read() returns 255 if no
+  // // has been written to the EEPROM before. therefore the siebenuhrs EEPROM
+  // // needs to be initialized with the default values and the serial number
 
-  if(serialNumber == 65535 || serialNumber == 0) {
-    File dataFile = SPIFFS.open ("/serial_number.txt", FILE_READ);
-    String serialNumberString;
-    if (dataFile) {
-      serialNumberString = dataFile.readStringUntil('\n');
-      serialNumber = atoi(serialNumberString.c_str());
-    }
-    if(serialNumber == 0) {
-      serialNumber = 9999;
-    }
-    serialNumber_lowByte = serialNumber & 0xff;
-    serialNumber_highByte = (serialNumber >> 8);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE, serialNumber_lowByte, 0);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE, serialNumber_highByte, 0);
+  // if(serialNumber == 65535 || serialNumber == 0) {
+  //   File dataFile = SPIFFS.open ("/serial_number.txt", FILE_READ);
+  //   String serialNumberString;
+  //   if (dataFile) {
+  //     serialNumberString = dataFile.readStringUntil('\n');
+  //     serialNumber = atoi(serialNumberString.c_str());
+  //   }
+  //   if(serialNumber == 0) {
+  //     serialNumber = 9999;
+  //   }
+  //   serialNumber_lowByte = serialNumber & 0xff;
+  //   serialNumber_highByte = (serialNumber >> 8);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE, serialNumber_lowByte, 0);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE, serialNumber_highByte, 0);
 
-    // lets save all the default values to EEPROM
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_H, DEFAULT_COLOR.h, 0);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_S, DEFAULT_COLOR.s, 0);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_V, DEFAULT_COLOR.v, 0);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_BRIGHTNESS, 80, 0);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
-    deferred_saving_to_EEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, 1, 0);
+  //   // lets save all the default values to EEPROM
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_H, DEFAULT_COLOR.h, 0);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_S, DEFAULT_COLOR.s, 0);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_V, DEFAULT_COLOR.v, 0);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_BRIGHTNESS, 80, 0);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
+  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, 1, 0);
 
-    save_to_EEPROM();
-  }
+  //   save_to_EEPROM();
+  // }
 
   _gCurrentPalette = CRGBPalette16( CRGB::Black);
   //_gTargetPalette = CRGBPalette16( gGradientPalettes[0] );
@@ -75,9 +77,9 @@ uint16_t DisplayDriver::setup() {
     FastLED.addLeds<NEOPIXEL, DATA_PIN_0>(_all_leds, SEGMENT_COUNT*LEDS_PER_SEGMENT*GLYPH_COUNT);
   }
 
-  _solidColor.h = read_from_EEPROM(EEPROM_ADDRESS_H);
-  _solidColor.s = read_from_EEPROM(EEPROM_ADDRESS_S);
-  _solidColor.v = read_from_EEPROM(EEPROM_ADDRESS_V);
+  _solidColor.h = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_H);
+  _solidColor.s = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_S);
+  _solidColor.v = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_V);
   debug_value("bootup HUE", _solidColor.h);
   // FIXME next if can be deleted, once the initatilizations upstairs works
   if(_solidColor.h == 0 && _solidColor.s == 0 && _solidColor.v == 0) {
@@ -85,14 +87,13 @@ uint16_t DisplayDriver::setup() {
   }
   _solidColor_previous = _solidColor;
   set_color(_solidColor);
-  _brightness = read_from_EEPROM(EEPROM_ADDRESS_BRIGHTNESS);
+  _brightness = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_BRIGHTNESS);
   set_brightness(_brightness);
-  set_timezone_hour(read_from_EEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR));
-  mColor_wheel_angle = read_from_EEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE);
-  mDisplay_effect = read_from_EEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
+  set_timezone_hour(siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR));
+  mColor_wheel_angle = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE);
+  mDisplay_effect = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
 
   setPower(1);
-  return serialNumber;
 }
 
 
@@ -132,10 +133,6 @@ void DisplayDriver::update() {
       Serial.print("DEBUG    ø Compution Time: ");
       Serial.println(avg_compution_time.getAverage());
     }
-  }
-  // save values to EEPROM (if scheduled)
-  if(deferred_saving_to_EEPROM_scheduled) {
-    save_to_EEPROM();
   }
 }
 
@@ -346,9 +343,9 @@ void DisplayDriver::set_color(const struct CHSV& color) {
 
 
 void DisplayDriver::save_and_set_new_default_solid_color(const struct CHSV& color) {
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_H, color.h);
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_S, color.s);
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_V, color.v);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
   set_color(color);
 }
 
@@ -393,7 +390,7 @@ void DisplayDriver::set_display_effect(uint8_t value)
   else if (value >= _display_effects_count)
   value = _display_effects_count - 1;
   mDisplay_effect = value;
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
 }
 
 uint8_t DisplayDriver::get_display_effect()
@@ -424,12 +421,12 @@ void DisplayDriver::adjust_and_save_new_display_effect(bool up)
     mDisplay_effect--;
   // wrap around at the ends
   if (mDisplay_effect < 0)
-    mDisplay_effect = 0;
+  mDisplay_effect = 0;
   else if (mDisplay_effect >= _display_effects_count)
-    mDisplay_effect = _display_effects_count - 1;
+  mDisplay_effect = _display_effects_count - 1;
   Serial.print("current display effect: ");
   Serial.println(mDisplay_effect);
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
 }
 
 void DisplayDriver::set_operations_mode(uint8_t mode) {
@@ -463,7 +460,7 @@ void DisplayDriver::set_brightness(uint8_t value) {
 void DisplayDriver::save_and_set_new_default_brightness(uint8_t value) {
   if (value > 255) value = 255;
   else if (value < 0) value = 0;
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_BRIGHTNESS, value);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_BRIGHTNESS, value);
   set_brightness(value);
 }
 
@@ -569,7 +566,7 @@ void DisplayDriver::set_timezone_hour(int value) {
 
 void DisplayDriver::save_and_set_new_default_timezone_hour(int value) {
   set_timezone_hour(value);
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, value);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, value);
 }
 
 /**************************************************************************/
@@ -599,7 +596,7 @@ void DisplayDriver::set_color_wheel_angle(uint8_t value) {
 void DisplayDriver::save_new_color_wheel_angle(uint8_t value) {
   if (value > 255) value = 255;
   else if (value < 0) value = 0;
-  deferred_saving_to_EEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, value);
+  siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, value);
   set_color_wheel_angle(value);
 }
 
@@ -677,98 +674,98 @@ int DisplayDriver::check_for_special_blending_period() {
   }
 }
 
-/**************************************************************************/
-/*
-    read_from_EEPROM
+// /**************************************************************************/
+// /*
+//     read_from_EEPROM
 
-    Reads a value from EEPROM and if this returns 0, sets it to
-    the default value
-*/
-/**************************************************************************/
-uint8_t DisplayDriver::read_from_EEPROM(uint8_t EEPROM_address) {
-  uint8_t return_value = EEPROM.read(EEPROM_address);
-  return return_value;
-}
+//     Reads a value from EEPROM and if this returns 0, sets it to
+//     the default value
+// */
+// /**************************************************************************/
+// uint8_t DisplayDriver::read_from_EEPROM(uint8_t EEPROM_address) {
+//   uint8_t return_value = EEPROM.read(EEPROM_address);
+//   return return_value;
+// }
 
-/**************************************************************************/
-/*
-    save_to_EEPROM
+// /**************************************************************************/
+// /*
+//     save_to_EEPROM
 
-    Utility function for deferred writing to save a value to EEPROM.
-    This one will actually write to the EEPROM, whilst the other one
-    (deferred_saving_to_EEPROM)  schedules the execution of this method.
+//     Utility function for deferred writing to save a value to EEPROM.
+//     This one will actually write to the EEPROM, whilst the other one
+//     (deferred_saving_to_EEPROM)  schedules the execution of this method.
 
-    It will first check, if the scheduled time has passed before writing
-    the value. Reason for the deferred writing is the inability of the ESP_32
-    to handle to fast consecutive writing to EEPROM (I observed many crashes
-    as a result of too fast rety-attemps).
-    Once the time has passed, the value is written to the fiven EEPROM_address
-    and then the time is reset to 0 (for the whole struct to result 0 if there
-    is no value scheduled for deferred saving)
+//     It will first check, if the scheduled time has passed before writing
+//     the value. Reason for the deferred writing is the inability of the ESP_32
+//     to handle to fast consecutive writing to EEPROM (I observed many crashes
+//     as a result of too fast rety-attemps).
+//     Once the time has passed, the value is written to the fiven EEPROM_address
+//     and then the time is reset to 0 (for the whole struct to result 0 if there
+//     is no value scheduled for deferred saving)
 
-    now is passed as value in order to be more ressourcefull - as this utility
-    function is usually called many times after each other, it appeared more
-    efficient to pass it by reference than to look it up and write to
-    memeory on every call
-*/
-/**************************************************************************/
+//     now is passed as value in order to be more ressourcefull - as this utility
+//     function is usually called many times after each other, it appeared more
+//     efficient to pass it by reference than to look it up and write to
+//     memeory on every call
+// */
+// /**************************************************************************/
 
-void DisplayDriver::save_to_EEPROM() {
-  uint32_t now = millis();
-  for(int EEPROM_address=0; EEPROM_address<EEPROM_ADDRESS_COUNT; EEPROM_address++) {
-    //save_to_EEPROM(EEPROM_ADDRESSES[i], now);
-    if (deferred_saving_to_EEPROM_at[EEPROM_address] && now >= deferred_saving_to_EEPROM_at[EEPROM_address]) {
-      // only save if value != the value already in the EEPROM (to extend the TTL)
-      uint8_t oldValue = EEPROM.read(EEPROM_address);
-      if (oldValue != deferred_saving_to_EEPROM_value[EEPROM_address]) {
-        EEPROM.write(EEPROM_address, deferred_saving_to_EEPROM_value[EEPROM_address]);
-        debug_value("Writing to EEPROM Address ", EEPROM_address);
-        debug_value("Value ", deferred_saving_to_EEPROM_value[EEPROM_address]);
-      }
-      deferred_saving_to_EEPROM_at[EEPROM_address] = 0;
-    }
-    // check, if some other EEPROM value is scheduled for saving
-    deferred_saving_to_EEPROM_scheduled = false;
-    for(int i=0; i< EEPROM_ADDRESS_COUNT; i++) {
-      // FIXME could be done with an OR |= operator, but I would only wanna try it, onc e I have a chip around for debugging it
-      if(deferred_saving_to_EEPROM_scheduled == false) {
-        deferred_saving_to_EEPROM_scheduled = deferred_saving_to_EEPROM_at[i] > 0 ? true : false;
-      }
-    }
-  }
-  // as no more commits are scheduled, lets commit to EEPROM
-  if(deferred_saving_to_EEPROM_scheduled == false) {
-    EEPROM.commit();
-    Serial.println("commit!");
-  }
-}
+// void DisplayDriver::save_to_EEPROM() {
+//   uint32_t now = millis();
+//   for(int EEPROM_address=0; EEPROM_address<EEPROM_ADDRESS_COUNT; EEPROM_address++) {
+//     //save_to_EEPROM(EEPROM_ADDRESSES[i], now);
+//     if (deferred_saving_to_EEPROM_at[EEPROM_address] && now >= deferred_saving_to_EEPROM_at[EEPROM_address]) {
+//       // only save if value != the value already in the EEPROM (to extend the TTL)
+//       uint8_t oldValue = EEPROM.read(EEPROM_address);
+//       if (oldValue != deferred_saving_to_EEPROM_value[EEPROM_address]) {
+//         EEPROM.write(EEPROM_address, deferred_saving_to_EEPROM_value[EEPROM_address]);
+//         debug_value("Writing to EEPROM Address ", EEPROM_address);
+//         debug_value("Value ", deferred_saving_to_EEPROM_value[EEPROM_address]);
+//       }
+//       deferred_saving_to_EEPROM_at[EEPROM_address] = 0;
+//     }
+//     // check, if some other EEPROM value is scheduled for saving
+//     deferred_saving_to_EEPROM_scheduled = false;
+//     for(int i=0; i< EEPROM_ADDRESS_COUNT; i++) {
+//       // FIXME could be done with an OR |= operator, but I would only wanna try it, onc e I have a chip around for debugging it
+//       if(deferred_saving_to_EEPROM_scheduled == false) {
+//         deferred_saving_to_EEPROM_scheduled = deferred_saving_to_EEPROM_at[i] > 0 ? true : false;
+//       }
+//     }
+//   }
+//   // as no more commits are scheduled, lets commit to EEPROM
+//   if(deferred_saving_to_EEPROM_scheduled == false) {
+//     EEPROM.commit();
+//     Serial.println("commit!");
+//   }
+// }
 
-/**************************************************************************/
-/*
-    deferred_saving_to_EEPROM
+// /**************************************************************************/
+// /*
+//     deferred_saving_to_EEPROM
 
-    Utility function to schedule a deferred writing to save a value to EEPROM.
-    It will first check, if the scheduled time has passed before writing
-    the value. Reason for the deferred writing is the inability of the ESP_32
-    to handle to fast consecutive writing to EEPROM (I observed many crashes
-    as a result of too fast rety-attemps).
-    Once the time has passed, the value is written to the fiven EEPROM_address
-    and then the time is reset to 0 (for the whole struct to result 0 if there
-    is no value scheduled for deferred saving)
+//     Utility function to schedule a deferred writing to save a value to EEPROM.
+//     It will first check, if the scheduled time has passed before writing
+//     the value. Reason for the deferred writing is the inability of the ESP_32
+//     to handle to fast consecutive writing to EEPROM (I observed many crashes
+//     as a result of too fast rety-attemps).
+//     Once the time has passed, the value is written to the fiven EEPROM_address
+//     and then the time is reset to 0 (for the whole struct to result 0 if there
+//     is no value scheduled for deferred saving)
 
-    now is passed as value in order to be more ressourcefull - as this utility
-    function is usually called many times after each other, it appeared more
-    efficient to pass it by reference than to look it up and write to
-    memeory on every call
-*/
-/**************************************************************************/
+//     now is passed as value in order to be more ressourcefull - as this utility
+//     function is usually called many times after each other, it appeared more
+//     efficient to pass it by reference than to look it up and write to
+//     memeory on every call
+// */
+// /**************************************************************************/
 
-void DisplayDriver::deferred_saving_to_EEPROM(const int EEPROM_address, uint8_t value, uint32_t delay) {
-  uint32_t now = millis();
-  deferred_saving_to_EEPROM_at[EEPROM_address] = now+delay;
-  deferred_saving_to_EEPROM_value[EEPROM_address] = value;
-  deferred_saving_to_EEPROM_scheduled = true;
-}
+// void DisplayDriver::deferred_saving_to_EEPROM(const int EEPROM_address, uint8_t value, uint32_t delay) {
+//   uint32_t now = millis();
+//   deferred_saving_to_EEPROM_at[EEPROM_address] = now+delay;
+//   deferred_saving_to_EEPROM_value[EEPROM_address] = value;
+//   deferred_saving_to_EEPROM_scheduled = true;
+// }
 
 String DisplayDriver::getStatus()
 {

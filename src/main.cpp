@@ -31,7 +31,7 @@ void setup() {
     if (_inst == nullptr)
         return;
 
-    uint16_t serialNumber = Display.setup();
+    uint16_t serialNumber_ = Display.setup(_inst->getFirstTimeSetup());
     _inst->setResetButton(RESET_BUTTON);
     _inst->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
 
@@ -41,10 +41,9 @@ void setup() {
         return;
     };
 
-
     // setup wifi
     char connectName[100];
-    sprintf(connectName, "Siebenuhr_%04d WiFi setup", serialNumber);
+    sprintf(connectName, "Siebenuhr_%04d WiFi setup", _inst->getSerialNumber());
 
     String _cTimezone;
     #ifdef _WIFITEST

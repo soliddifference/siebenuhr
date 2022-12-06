@@ -44,6 +44,98 @@ Controller::Controller() {
 
 	_nMenuCurPos = 0;
 	_nMenuMaxPos = 10;
+
+	_bFirstTimeSetup = true;
+	_nSerialNumber = 0;
+
+	initializeEEPROM();
+}
+
+void Controller::initializeEEPROM() {
+	// initialize eeprom (hopefully only once!)
+	EEPROM.begin(512);
+
+	deferred_saving_to_EEPROM_scheduled = false;
+	memset(deferred_saving_to_EEPROM_at, 0, sizeof(uint32_t)*EEPROM_ADDRESS_COUNT);
+	memset(deferred_saving_to_EEPROM_value, 0, sizeof(uint8_t)*EEPROM_ADDRESS_COUNT);
+
+	uint8_t serialNumber_lowByte = readFromEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE);
+	uint8_t serialNumber_highByte = readFromEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE);
+	uint16_t serialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
+	// according to the ARDUINO documentation, EEPROM.read() returns 255 if no
+	// has been written to the EEPROM before. therefore the siebenuhrs EEPROM
+	// needs to be initialized with the default values and the serial number
+
+	_bFirstTimeSetup = false;
+	if(serialNumber == 65535 || serialNumber == 0) {
+		File dataFile = SPIFFS.open ("/serial_number.txt", FILE_READ);
+		String serialNumberString;
+		if (dataFile) {
+			serialNumberString = dataFile.readStringUntil('\n');
+			serialNumber = atoi(serialNumberString.c_str());
+		}
+		if(serialNumber == 0) {
+			serialNumber = 9999;
+		}
+		serialNumber_lowByte = serialNumber & 0xff;
+		serialNumber_highByte = (serialNumber >> 8);
+		writeToEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE, serialNumber_lowByte, 0);
+		writeToEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE, serialNumber_highByte, 0);
+
+		// lets save all the default values to EEPROM
+		writeToEEPROM(EEPROM_ADDRESS_H, DEFAULT_COLOR.h, 0);
+		writeToEEPROM(EEPROM_ADDRESS_S, DEFAULT_COLOR.s, 0);
+		writeToEEPROM(EEPROM_ADDRESS_V, DEFAULT_COLOR.v, 0);
+		writeToEEPROM(EEPROM_ADDRESS_BRIGHTNESS, 80, 0);
+		writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
+		writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
+		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, 1, 0);
+
+		saveToEEPROM();
+	}
+}
+
+uint8_t Controller::readFromEEPROM(uint8_t EEPROM_address) {
+  uint8_t return_value = EEPROM.read(EEPROM_address);
+  return return_value;
+}
+
+void Controller::saveToEEPROM() {
+	uint32_t now = millis();
+	for(int EEPROM_address=0; EEPROM_address<EEPROM_ADDRESS_COUNT; EEPROM_address++) {
+		if (deferred_saving_to_EEPROM_at[EEPROM_address] && now >= deferred_saving_to_EEPROM_at[EEPROM_address]) {
+			// only save if value != the value already in the EEPROM (to extend the TTL)
+			uint8_t oldValue = EEPROM.read(EEPROM_address);
+			if (oldValue != deferred_saving_to_EEPROM_value[EEPROM_address]) {
+				EEPROM.write(EEPROM_address, deferred_saving_to_EEPROM_value[EEPROM_address]);
+				debug_value("Writing to EEPROM Address ", EEPROM_address);
+				debug_value("Value ", deferred_saving_to_EEPROM_value[EEPROM_address]);
+			}
+			deferred_saving_to_EEPROM_at[EEPROM_address] = 0;
+		}
+
+		// check, if some other EEPROM value is scheduled for saving
+		deferred_saving_to_EEPROM_scheduled = false;
+		for(int i=0; i< EEPROM_ADDRESS_COUNT; i++) {
+			if(deferred_saving_to_EEPROM_scheduled == false) {
+				deferred_saving_to_EEPROM_scheduled = deferred_saving_to_EEPROM_at[i] > 0 ? true : false;
+			}
+		}
+	}
+
+	// as no more commits are scheduled, lets commit to EEPROM
+	if(deferred_saving_to_EEPROM_scheduled == false) {
+		EEPROM.commit();
+		debugMessage("commit!");
+	}
+}
+
+void Controller::writeToEEPROM(const int EEPROM_address, uint8_t value, uint32_t delay) {
+	//Utility function to schedule a deferred writing to save a value to EEPROM.
+	uint32_t now = millis();
+	deferred_saving_to_EEPROM_at[EEPROM_address] = now+delay;
+	deferred_saving_to_EEPROM_value[EEPROM_address] = value;
+	deferred_saving_to_EEPROM_scheduled = true;
 }
 
 bool Controller::initializeDisplay(DisplayDriver* display) {
@@ -121,6 +213,11 @@ bool Controller::update() {
 	}
 
 	_pDisplay->update();
+
+	// save values to EEPROM (if scheduled)
+	if(deferred_saving_to_EEPROM_scheduled) {
+		saveToEEPROM();
+	}
 
 	return true;
 }
