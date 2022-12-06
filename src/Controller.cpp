@@ -30,6 +30,10 @@ Controller* Controller::getInstance(){
 }
 
 Controller::Controller() {
+	_bDebugEnabled = false;
+	_bWifiEnabled = false;
+	_bNTPEnabled = false;
+
 	_eState = CONTROLLER_STATE::undefined;
 	_nLastErrorCode = 0L;
 	_strLastErrorDesc = "undefined.";
@@ -42,18 +46,52 @@ Controller::Controller() {
 	_nMenuMaxPos = 10;
 }
 
-bool Controller::setup(DisplayDriver* display, AsyncWiFiManager* WiFiManager) {
+bool Controller::initializeDisplay(DisplayDriver* display) {
 	_pDisplay = display;
-	_pWiFiManager = WiFiManager;
 
-	if (_pDisplay == nullptr || _pWiFiManager == nullptr) {
-		_strLastErrorDesc = "Failed to setup display or wifi component.";
+	if (_pDisplay == nullptr) {
+		_strLastErrorDesc = "Failed to setup wifi component.";
 		return false;
 	}
 
 	_pDisplay->set_notification(_cMessage);
 
 	_eState = CONTROLLER_STATE::initialized;
+	return true;
+}
+
+bool Controller::initializeDebug(bool enabled, int baud, int waitMilliseconds) {
+	_bDebugEnabled = enabled;
+	if (enabled) {
+        Serial.begin(baud);
+        delay(waitMilliseconds); // for the console to relax and open
+		debugMessage("7Uhr debugging enabled.");
+	}
+	return true;
+}
+
+void Controller::debugMessage(const char* message) {
+	if (_bDebugEnabled) {
+		Serial.println(message);
+	}
+}
+
+bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
+	_bWifiEnabled = enabled;
+	if (enabled) {
+		_pWiFiManager = WiFiManager;
+
+		if (_pWiFiManager == nullptr) {
+			_strLastErrorDesc = "Failed to setup wifi component.";
+			return false;
+		}
+	}
+	return true;
+}
+
+bool Controller::initializeNTP(bool enabled) {
+	_bNTPEnabled = enabled;
+	// todo:
 	return true;
 }
 

@@ -26,46 +26,33 @@ DNSServer dns;
 
 AsyncWiFiManager wifiManager(&server, &dns);
 
-bool DEMO_MODE = false;
-
 void setup() {
-    Serial.begin(115200);
-    delay(3000); // for the console to relax and open
-    Serial.println("SETUP started.");
-    // if(!SPIFFS.begin()){
-    //     Serial.println("SPIFFS Mount Failed");
-    //     return;
-    // }
-    //debug_listDir(SPIFFS, "/", 0);
+    siebenuhr::Controller *_inst = siebenuhr::Controller::getInstance(); // just for convinience
+    if (_inst == nullptr)
+        return;
+
     uint16_t serialNumber = Display.setup();
+    _inst->setResetButton(RESET_BUTTON);
+    _inst->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
 
-    siebenuhr::Controller::getInstance()->setResetButton(RESET_BUTTON);
-    siebenuhr::Controller::getInstance()->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
-
-    if (!siebenuhr::Controller::getInstance()->setup(&Display, &wifiManager)) {
-        Serial.println(siebenuhr::Controller::getInstance()->getLastErrorDesc());
-        Serial.println("7Uhr controller setup failed.");
+    if (!_inst->initializeDebug(true) || !_inst->initializeWifi(true, &wifiManager) || !_inst->initializeNTP(true) || !_inst->initializeDisplay(&Display)) {
+        _inst->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
+        _inst->debugMessage("7Uhr controller setup failed.");
         return;
     };
 
-    // EEPROMWriteString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, "Europe/Zurich", EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
-    // EEPROMWriteString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, "", EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
-    // WiFi.begin("humschti", "bumschti");
-    // WiFi.disconnect(true, true); delay(3000);
-    // ESP.restart(); delay(3000);
 
     // setup wifi
     char connectName[100];
-    //DEMO_MODE = true;
     sprintf(connectName, "Siebenuhr_%04d WiFi setup", serialNumber);
 
     String _cTimezone;
-    if(DEMO_MODE) {
+    #ifdef _WIFITEST
         Serial.println("Demo mode enabled. Will connect to Justin Bieber's iPhone.");
         WiFi.begin("Justin Bieber's iPhone", "stalldrang");
         _cTimezone = "Europe/Zurich";
         delay(1000);
-    } else {
+    #else
         AsyncWiFiManagerParameter custom_text("<br><b>Timezone</b> of this SIEBENUHR (e.g. \"Europe/Zurich\")<BR>Please find <a href=\"https://en.wikipedia.org/wiki/List_of_tz_database_time_zones\">a complete list on Wikipedia</a>");
         wifiManager.addParameter(&custom_text);
         char provided_timezone[EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH] = "Europe/Zurich";
@@ -82,9 +69,9 @@ void setup() {
            Serial.println("'");
            EEPROMWriteString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, captive_portal_timezone.getValue(), EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
         }
-    }
-    _cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
+    #endif
 
+    _cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
     Serial.print("Timezone (EEPROM) : ");
     Serial.println(_cTimezone);
     Serial.print("SSID              : ");
@@ -121,7 +108,7 @@ void setup() {
     Display.disable_notification();
     Display.set_operations_mode(OPERATION_MODE_CLOCK_HOURS);
 
-    Serial.println("SETUP complete");
+    _inst->debugMessage("7Uhr controller setup complete.");
 }
 
 void loop() {

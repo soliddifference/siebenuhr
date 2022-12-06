@@ -40,7 +40,11 @@ public:
 
 	static Controller* getInstance();
 
-	bool setup(DisplayDriver* display, AsyncWiFiManager* WiFiManager);
+	bool initializeDebug(bool enabled, int baud=115200, int waitMilliseconds=3000);
+	bool initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager);
+	bool initializeNTP(bool enabled);
+	bool initializeDisplay(DisplayDriver* display);
+
 	bool update();
 
 	inline int getLastErrorCode() { return _nLastErrorCode; };
@@ -48,6 +52,8 @@ public:
 
 	void setResetButton(int buttonResetPin);
 	void setKnob(int knobPinA, int knobPinB, int buttonPin);
+
+	void debugMessage(const char *msg);
 
 private:
 	Controller();
@@ -58,6 +64,9 @@ private:
 	CONTROLLER_STATE _eState;
 	int _nLastErrorCode;
 	String _strLastErrorDesc;
+	bool _bDebugEnabled;
+	bool _bWifiEnabled;
+	bool _bNTPEnabled;
 
 	// hardware interfaces
 	static UIButton* _pResetButton;
