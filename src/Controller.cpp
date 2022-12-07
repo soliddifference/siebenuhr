@@ -45,7 +45,7 @@ Controller::Controller() {
 	_nMenuCurPos = 0;
 	_nMenuMaxPos = 10;
 
-	_bFirstTimeSetup = true;
+	_bFirstTimeSetup = false;
 	_nSerialNumber = 0;
 
 	initializeEEPROM();
@@ -55,30 +55,28 @@ void Controller::initializeEEPROM() {
 	// initialize eeprom (hopefully only once!)
 	EEPROM.begin(512);
 
-	deferred_saving_to_EEPROM_scheduled = false;
-	memset(deferred_saving_to_EEPROM_at, 0, sizeof(uint32_t)*EEPROM_ADDRESS_COUNT);
-	memset(deferred_saving_to_EEPROM_value, 0, sizeof(uint8_t)*EEPROM_ADDRESS_COUNT);
+	_bDeferredSavingToEEPROMScheduled = false;
+	memset(_nDeferredSavingToEEPROMAt, 0, sizeof(uint32_t)*EEPROM_ADDRESS_COUNT);
+	memset(_nDeferredSavingToEEPROMValue, 0, sizeof(uint8_t)*EEPROM_ADDRESS_COUNT);
 
 	uint8_t serialNumber_lowByte = readFromEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE);
 	uint8_t serialNumber_highByte = readFromEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE);
-	uint16_t serialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
-	// according to the ARDUINO documentation, EEPROM.read() returns 255 if no
-	// has been written to the EEPROM before. therefore the siebenuhrs EEPROM
-	// needs to be initialized with the default values and the serial number
+	_nSerialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
 
-	_bFirstTimeSetup = false;
-	if(serialNumber == 65535 || serialNumber == 0) {
-		File dataFile = SPIFFS.open ("/serial_number.txt", FILE_READ);
-		String serialNumberString;
-		if (dataFile) {
-			serialNumberString = dataFile.readStringUntil('\n');
-			serialNumber = atoi(serialNumberString.c_str());
-		}
-		if(serialNumber == 0) {
-			serialNumber = 9999;
-		}
-		serialNumber_lowByte = serialNumber & 0xff;
-		serialNumber_highByte = (serialNumber >> 8);
+	if(_nSerialNumber == 65535 || _nSerialNumber == 0) {
+		// according to the ARDUINO documentation, EEPROM.read() returns 255 if no
+		// has been written to the EEPROM before. therefore the siebenuhrs EEPROM
+		// needs to be initialized with the default values and the serial number
+		_bFirstTimeSetup = true;
+
+		uint64_t addr = ESP.getEfuseMac();
+		uint8_t serial[8];
+		std::memcpy(serial, &addr, sizeof(addr));
+
+		serialNumber_lowByte = serial[0]+serial[1]+serial[2]+serial[3]; // magic 
+		serialNumber_highByte = serial[4]+serial[5]+serial[6]+serial[7]; // pony
+		_nSerialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
+
 		writeToEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE, serialNumber_lowByte, 0);
 		writeToEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE, serialNumber_highByte, 0);
 
@@ -103,28 +101,28 @@ uint8_t Controller::readFromEEPROM(uint8_t EEPROM_address) {
 void Controller::saveToEEPROM() {
 	uint32_t now = millis();
 	for(int EEPROM_address=0; EEPROM_address<EEPROM_ADDRESS_COUNT; EEPROM_address++) {
-		if (deferred_saving_to_EEPROM_at[EEPROM_address] && now >= deferred_saving_to_EEPROM_at[EEPROM_address]) {
+		if (_nDeferredSavingToEEPROMAt[EEPROM_address] && now >= _nDeferredSavingToEEPROMAt[EEPROM_address]) {
 			// only save if value != the value already in the EEPROM (to extend the TTL)
 			uint8_t oldValue = EEPROM.read(EEPROM_address);
-			if (oldValue != deferred_saving_to_EEPROM_value[EEPROM_address]) {
-				EEPROM.write(EEPROM_address, deferred_saving_to_EEPROM_value[EEPROM_address]);
+			if (oldValue != _nDeferredSavingToEEPROMValue[EEPROM_address]) {
+				EEPROM.write(EEPROM_address, _nDeferredSavingToEEPROMValue[EEPROM_address]);
 				debug_value("Writing to EEPROM Address ", EEPROM_address);
-				debug_value("Value ", deferred_saving_to_EEPROM_value[EEPROM_address]);
+				debug_value("Value ", _nDeferredSavingToEEPROMValue[EEPROM_address]);
 			}
-			deferred_saving_to_EEPROM_at[EEPROM_address] = 0;
+			_nDeferredSavingToEEPROMAt[EEPROM_address] = 0;
 		}
 
 		// check, if some other EEPROM value is scheduled for saving
-		deferred_saving_to_EEPROM_scheduled = false;
+		_bDeferredSavingToEEPROMScheduled = false;
 		for(int i=0; i< EEPROM_ADDRESS_COUNT; i++) {
-			if(deferred_saving_to_EEPROM_scheduled == false) {
-				deferred_saving_to_EEPROM_scheduled = deferred_saving_to_EEPROM_at[i] > 0 ? true : false;
+			if(_bDeferredSavingToEEPROMScheduled == false) {
+				_bDeferredSavingToEEPROMScheduled = _nDeferredSavingToEEPROMAt[i] > 0 ? true : false;
 			}
 		}
 	}
 
 	// as no more commits are scheduled, lets commit to EEPROM
-	if(deferred_saving_to_EEPROM_scheduled == false) {
+	if(_bDeferredSavingToEEPROMScheduled == false) {
 		EEPROM.commit();
 		debugMessage("commit!");
 	}
@@ -133,9 +131,9 @@ void Controller::saveToEEPROM() {
 void Controller::writeToEEPROM(const int EEPROM_address, uint8_t value, uint32_t delay) {
 	//Utility function to schedule a deferred writing to save a value to EEPROM.
 	uint32_t now = millis();
-	deferred_saving_to_EEPROM_at[EEPROM_address] = now+delay;
-	deferred_saving_to_EEPROM_value[EEPROM_address] = value;
-	deferred_saving_to_EEPROM_scheduled = true;
+	_nDeferredSavingToEEPROMAt[EEPROM_address] = now+delay;
+	_nDeferredSavingToEEPROMValue[EEPROM_address] = value;
+	_bDeferredSavingToEEPROMScheduled = true;
 }
 
 bool Controller::initializeDisplay(DisplayDriver* display) {
@@ -215,7 +213,7 @@ bool Controller::update() {
 	_pDisplay->update();
 
 	// save values to EEPROM (if scheduled)
-	if(deferred_saving_to_EEPROM_scheduled) {
+	if(_bDeferredSavingToEEPROMScheduled) {
 		saveToEEPROM();
 	}
 

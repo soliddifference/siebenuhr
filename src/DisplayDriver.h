@@ -155,20 +155,6 @@ private:
 
   int _nLastTimePrintUpdate = 0;
   void print_current_time();
-
-  // // flag to store, wheter a deferred saving to EEPROM is scheduled
-  // bool deferred_saving_to_EEPROM_scheduled = false;
-  // // array to store the times, when the deferred EEPROM-saving needs to take place
-  // uint32_t deferred_saving_to_EEPROM_at[EEPROM_ADDRESS_COUNT] = { 0, 0, 0, 0, 0, 0};
-  // // array to store the values that have to be written, once the deferred EEPROM-saving takes place
-  // uint8_t  deferred_saving_to_EEPROM_value[EEPROM_ADDRESS_COUNT] = { 0, 0, 0, 0, 0, 0};
-
-  // void save_to_EEPROM();
-  // void deferred_saving_to_EEPROM(const int EEPROM_address, uint8_t value, uint32_t delay=10000);
-  // uint8_t read_from_EEPROM(uint8_t EEPROM_address);
-
-
-
 };
 
 #endif

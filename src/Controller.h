@@ -88,9 +88,9 @@ private:
 	uint16_t _nSerialNumber;
 
 	// EEPROM
-	bool deferred_saving_to_EEPROM_scheduled;
-	uint32_t deferred_saving_to_EEPROM_at[EEPROM_ADDRESS_COUNT];
-	uint8_t  deferred_saving_to_EEPROM_value[EEPROM_ADDRESS_COUNT];
+	bool _bDeferredSavingToEEPROMScheduled;
+	uint32_t _nDeferredSavingToEEPROMAt[EEPROM_ADDRESS_COUNT];
+	uint8_t  _nDeferredSavingToEEPROMValue[EEPROM_ADDRESS_COUNT];
 
 	// hardware interfaces
 	static UIButton* _pResetButton;
