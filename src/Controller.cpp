@@ -166,6 +166,12 @@ void Controller::debugMessage(const char* message) {
 	}
 }
 
+void Controller::debugMessage(const String &message) {
+	if (_bDebugEnabled) {
+		Serial.println(message.c_str());
+	}
+}
+
 bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
 	_bWifiEnabled = enabled;
 	if (enabled) {
@@ -225,11 +231,11 @@ void Controller::handleUIResetButton() {
 	    int countdown_int = (5 - (int)(_pResetButton->getTimeSinceStateChange()/1000.f));
 	    if (countdown_int >= 0) {
 			_cMessage = formatString("rst%d", countdown_int);
-			Serial.println(_cMessage);
+			debugMessage(_cMessage);
 			_pDisplay->set_notification(_cMessage);
 	    } else {
 			_cMessage = "boom";
-			Serial.println("Restaring siebenuhr after WIFI-reset.");
+			debugMessage("Restaring siebenuhr after WIFI-reset.");
 			_pDisplay->set_notification(_cMessage);
 			// code in wifi manager is broken. Just called for debug messages....
 			_pWiFiManager->resetSettings();
@@ -249,7 +255,7 @@ void Controller::handleUIResetButton() {
 void Controller::handleUIKnob() {
 	if(_pKnob->isPressed()) {
 		_nMenuCurPos = (_nMenuCurPos+1) == _nMenuMaxEntries ? 0 : _nMenuCurPos+1;
-		Serial.println(formatString("MENU: %s", _sMenu[_nMenuCurPos].name.c_str()));
+		debugMessage(formatString("MENU: %s", _sMenu[_nMenuCurPos].name.c_str()));
 		_pDisplay->set_notification(_sMenu[_nMenuCurPos].message, 3000);
     }
 
@@ -262,7 +268,7 @@ void Controller::handleUIKnob() {
 			brightness_index += encoderDelta;
 			_pDisplay->save_and_set_new_default_brightness_index(brightness_index);
 			brightness_index = _pDisplay->get_brightness_index();
-			Serial.println(formatString("MENU: %s - Brightness: %d", _sMenu[_nMenuCurPos].name.c_str(), brightness_index));
+			debugMessage(formatString("MENU: %s - Brightness: %d", _sMenu[_nMenuCurPos].name.c_str(), brightness_index));
 			break;
 		}
 
@@ -310,18 +316,18 @@ void Controller::handleUIKnob() {
 			} else if(encoderDelta<0) {
 				_pDisplay->adjust_and_save_new_display_effect(false);
 			}
-			Serial.println(_pDisplay->get_display_effect());
+			debugMessage(formatString("current effect: %d", _pDisplay->get_display_effect()));
 			_pDisplay->set_notification(_pDisplay->get_display_effect_short(), 3000);
 			break;
 		}
 
 		case CONTROLLER_MENU::TIMEZONE: {
 			int8_t timeZone = _pDisplay->get_timezone_hour();
-			debug_value("current TZ", timeZone);
+			debugMessage(formatString("current TZ: %d", timeZone));
 			// FIXME: before shipping to north korea et al I'll have to implenment half-hour timezones as well
 			if(encoderDelta>0) timeZone++;
 			else if (encoderDelta<0) timeZone--;
-			debug_value("new TZ", timeZone);
+			debugMessage(formatString("new TZ: %d", timeZone));
 			_pDisplay->set_timezone_hour(timeZone);
 
 			char notifcation[4] { 0, 0, 0, 0 };

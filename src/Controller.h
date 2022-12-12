@@ -65,6 +65,7 @@ public:
 
 	// debugging and logging
 	void debugMessage(const char *msg);
+	void debugMessage(const String &s);
 
 private:
 	Controller();
