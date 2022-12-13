@@ -15,7 +15,7 @@ static const int DEBUG_COMPUTION_TIME = 0;
 public:
   DisplayDriver();
   ~DisplayDriver();
-  uint16_t setup(bool isFirstTimeSetup);
+  void setup(bool isFirstTimeSetup);
   void get_current_message(char* current_message);
   void set_notification(String notification, uint32_t milliseconds=0);
   void set_notification(char notification[4], uint32_t milliseconds=0);

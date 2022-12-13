@@ -24,57 +24,22 @@ DisplayDriver::~DisplayDriver () {
   // destructor
 }
 
-uint16_t DisplayDriver::setup(bool isFirstTimeSetup) {
-  // EEPROM.begin(512);
-  // // check if the serial number is already in the EEPROM. If not, this means
-  // // that this siebenuhr has never run before
-  // uint8_t serialNumber_lowByte = read_from_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE);
-  // uint8_t serialNumber_highByte = read_from_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE);
-  // uint16_t serialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
-  // // according to the ARDUINO documentation, EEPROM.read() returns 255 if no
-  // // has been written to the EEPROM before. therefore the siebenuhrs EEPROM
-  // // needs to be initialized with the default values and the serial number
-
-  // if(serialNumber == 65535 || serialNumber == 0) {
-  //   File dataFile = SPIFFS.open ("/serial_number.txt", FILE_READ);
-  //   String serialNumberString;
-  //   if (dataFile) {
-  //     serialNumberString = dataFile.readStringUntil('\n');
-  //     serialNumber = atoi(serialNumberString.c_str());
-  //   }
-  //   if(serialNumber == 0) {
-  //     serialNumber = 9999;
-  //   }
-  //   serialNumber_lowByte = serialNumber & 0xff;
-  //   serialNumber_highByte = (serialNumber >> 8);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE, serialNumber_lowByte, 0);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE, serialNumber_highByte, 0);
-
-  //   // lets save all the default values to EEPROM
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_H, DEFAULT_COLOR.h, 0);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_S, DEFAULT_COLOR.s, 0);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_V, DEFAULT_COLOR.v, 0);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_BRIGHTNESS, 80, 0);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
-  //   deferred_saving_to_EEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, 1, 0);
-
-  //   save_to_EEPROM();
-  // }
+void DisplayDriver::setup(bool isFirstTimeSetup) {
+  setPower(0);
 
   _gCurrentPalette = CRGBPalette16( CRGB::Black);
   //_gTargetPalette = CRGBPalette16( gGradientPalettes[0] );
   for(int i=0;  i<4; i++) {
-    if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_PARALELL) {
-      glyphs[i]->attach(i, i);
-    }
-    else if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
-      glyphs[i]->attach(i);
-    }
+  if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_PARALELL) {
+  glyphs[i]->attach(i, i);
+  }
+  else if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
+  glyphs[i]->attach(i);
+  }
   }
   if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
-    _all_leds = new CRGB[SEGMENT_COUNT*LEDS_PER_SEGMENT*GLYPH_COUNT];
-    FastLED.addLeds<NEOPIXEL, DATA_PIN_0>(_all_leds, SEGMENT_COUNT*LEDS_PER_SEGMENT*GLYPH_COUNT);
+  _all_leds = new CRGB[SEGMENT_COUNT*LEDS_PER_SEGMENT*GLYPH_COUNT];
+  FastLED.addLeds<NEOPIXEL, DATA_PIN_0>(_all_leds, SEGMENT_COUNT*LEDS_PER_SEGMENT*GLYPH_COUNT);
   }
 
   _solidColor.h = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_H);
@@ -83,7 +48,7 @@ uint16_t DisplayDriver::setup(bool isFirstTimeSetup) {
   debug_value("bootup HUE", _solidColor.h);
   // FIXME next if can be deleted, once the initatilizations upstairs works
   if(_solidColor.h == 0 && _solidColor.s == 0 && _solidColor.v == 0) {
-    _solidColor = DEFAULT_COLOR;
+  _solidColor = DEFAULT_COLOR;
   }
   _solidColor_previous = _solidColor;
   set_color(_solidColor);
@@ -341,7 +306,6 @@ void DisplayDriver::set_color(const struct CHSV& color) {
   }
 }
 
-
 void DisplayDriver::save_and_set_new_default_solid_color(const struct CHSV& color) {
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
@@ -352,6 +316,7 @@ void DisplayDriver::save_and_set_new_default_solid_color(const struct CHSV& colo
 uint8_t DisplayDriver::getPower() {
   return _power;
 }
+
 void DisplayDriver::setPower(uint8_t value) {
   if (_power != value) {
     _power = value;
@@ -366,16 +331,13 @@ void DisplayDriver::setPower(uint8_t value) {
       _powerIsDown = true;
     }
   }
-
 }
 
-CHSV DisplayDriver::get_solid_color()
-{
+CHSV DisplayDriver::get_solid_color() {
   return _solidColor;
 }
 
-String DisplayDriver::getSolidColorHex()
-{
+String DisplayDriver::getSolidColorHex() {
   // FIXME: totally broken since move to HSV-mode - need to be rewritten
   char hex[7] = {0};
   sprintf(hex,"%02X%02X%02X",_solidColor.h,_solidColor.s,_solidColor.v); //convert to an hexadecimal string. Lookup sprintf for what %02X means.

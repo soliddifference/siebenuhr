@@ -11,9 +11,11 @@
 // number of segments per glyph (hahaha, must be seven, as it's called siebenuhr, stupid!)
 static const int SEGMENT_COUNT = 7;
 // leds per single segment
-static const int LEDS_PER_SEGMENT = 6;
+// static const int LEDS_PER_SEGMENT = 6;
+static const int LEDS_PER_SEGMENT = 11;
 // number of glyphs on this clock
 static const int GLYPH_COUNT = 4;
+// static const int GLYPH_COUNT = 1;
 // // what's the refresh rate per second?
 static const int DISPLAY_FREQUENCY = 50;
 // the interval between refreshs (in ms) given a specific frequency

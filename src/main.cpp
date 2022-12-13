@@ -31,15 +31,25 @@ void setup() {
     if (_inst == nullptr)
         return;
 
-    uint16_t serialNumber_ = Display.setup(_inst->getFirstTimeSetup());
+    _inst->initializeDebug(true);
+    _inst->initializeEEPROM();
+
+    Display.setup(_inst->getFirstTimeSetup());
+
     _inst->setResetButton(RESET_BUTTON);
     _inst->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
 
-    if (!_inst->initializeDebug(true) || !_inst->initializeWifi(true, &wifiManager) || !_inst->initializeNTP(true) || !_inst->initializeDisplay(&Display)) {
+    if (!_inst->initializeWifi(true, &wifiManager) || !_inst->initializeNTP(true) || !_inst->initializeDisplay(&Display)) {
         _inst->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
         _inst->debugMessage("7Uhr controller setup failed.");
         return;
     };
+}
+
+void _setup() {
+    siebenuhr::Controller *_inst = siebenuhr::Controller::getInstance(); // just for convinience
+    if (_inst == nullptr)
+        return;
 
     // setup wifi
     char connectName[100];
@@ -98,8 +108,8 @@ void setup() {
     setDebug(INFO);
     while(timeStatus()==timeNotSet) {
       updateNTP();
-      Serial.println("waiting for time sync");
-      delay(1000);
+      _inst->debugMessage("Waiting for time sync");
+      delay(100);
     }
     waitForSync();
 

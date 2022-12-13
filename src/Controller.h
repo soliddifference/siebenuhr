@@ -42,6 +42,7 @@ public:
 
 	// update and run
 	bool initializeDebug(bool enabled, int baud=115200, int waitMilliseconds=3000);
+	void initializeEEPROM(bool forceFirstTimeSetup=false);
 	bool initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager);
 	bool initializeNTP(bool enabled);
 	bool initializeDisplay(DisplayDriver* display);
@@ -66,11 +67,11 @@ public:
 	// debugging and logging
 	void debugMessage(const char *msg);
 	void debugMessage(const String &s);
+	void debugValue(const char *key, const int value);
 
 private:
 	Controller();
 
-	void initializeEEPROM();
 	void saveToEEPROM();
 
 	void handleUIResetButton();
@@ -82,6 +83,7 @@ private:
 
 	// config
 	bool _bDebugEnabled;
+	bool _bEEPROMEnabled;
 	bool _bWifiEnabled;
 	bool _bNTPEnabled;
 

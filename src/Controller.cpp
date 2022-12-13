@@ -31,6 +31,7 @@ Controller* Controller::getInstance(){
 
 Controller::Controller() {
 	_bDebugEnabled = false;
+	_bEEPROMEnabled = false;
 	_bWifiEnabled = false;
 	_bNTPEnabled = false;
 
@@ -47,13 +48,12 @@ Controller::Controller() {
 
 	_bFirstTimeSetup = false;
 	_nSerialNumber = 0;
-
-	initializeEEPROM();
 }
 
-void Controller::initializeEEPROM() {
+void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 	// initialize eeprom (hopefully only once!)
 	EEPROM.begin(512);
+	_bEEPROMEnabled = true;
 
 	_bDeferredSavingToEEPROMScheduled = false;
 	memset(_nDeferredSavingToEEPROMAt, 0, sizeof(uint32_t)*EEPROM_ADDRESS_COUNT);
@@ -63,11 +63,13 @@ void Controller::initializeEEPROM() {
 	uint8_t serialNumber_highByte = readFromEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE);
 	_nSerialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
 
-	if(_nSerialNumber == 65535 || _nSerialNumber == 0) {
+	if(forceFirstTimeSetup || _nSerialNumber == 65535 || _nSerialNumber == 0) {
 		// according to the ARDUINO documentation, EEPROM.read() returns 255 if no
 		// has been written to the EEPROM before. therefore the siebenuhrs EEPROM
 		// needs to be initialized with the default values and the serial number
 		_bFirstTimeSetup = true;
+
+		debugMessage(formatString("Executing first time setup..."));
 
 		uint64_t addr = ESP.getEfuseMac();
 		uint8_t serial[8];
@@ -91,6 +93,8 @@ void Controller::initializeEEPROM() {
 
 		saveToEEPROM();
 	}
+
+	debugValue("SerialNumber", _nSerialNumber);
 }
 
 uint8_t Controller::readFromEEPROM(uint8_t EEPROM_address) {
@@ -106,8 +110,7 @@ void Controller::saveToEEPROM() {
 			uint8_t oldValue = EEPROM.read(EEPROM_address);
 			if (oldValue != _nDeferredSavingToEEPROMValue[EEPROM_address]) {
 				EEPROM.write(EEPROM_address, _nDeferredSavingToEEPROMValue[EEPROM_address]);
-				debug_value("Writing to EEPROM Address ", EEPROM_address);
-				debug_value("Value ", _nDeferredSavingToEEPROMValue[EEPROM_address]);
+				debugMessage(formatString("[EEPROM] addr(%02d) = %d", EEPROM_address, _nDeferredSavingToEEPROMValue[EEPROM_address]));
 			}
 			_nDeferredSavingToEEPROMAt[EEPROM_address] = 0;
 		}
@@ -124,7 +127,7 @@ void Controller::saveToEEPROM() {
 	// as no more commits are scheduled, lets commit to EEPROM
 	if(_bDeferredSavingToEEPROMScheduled == false) {
 		EEPROM.commit();
-		debugMessage("commit!");
+		debugMessage("[EEPROM] commit!");
 	}
 }
 
@@ -155,7 +158,7 @@ bool Controller::initializeDebug(bool enabled, int baud, int waitMilliseconds) {
 	if (enabled) {
         Serial.begin(baud);
         delay(waitMilliseconds); // for the console to relax and open
-		debugMessage("7Uhr debugging enabled.");
+		debugMessage("\n7Uhr debugging enabled.");
 	}
 	return true;
 }
@@ -170,6 +173,10 @@ void Controller::debugMessage(const String &message) {
 	if (_bDebugEnabled) {
 		Serial.println(message.c_str());
 	}
+}
+
+void Controller::debugValue(const char *key, const int value) {
+	debugMessage(formatString("%s: %d", key, value));
 }
 
 bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
