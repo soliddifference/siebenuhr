@@ -1,5 +1,5 @@
 /*  Display.cpp -
-	v0.1 tg 20180211 initial setup
+  v0.1 tg 20180211 initial setup
 
   Class to handle the display holding some glyphs (most likely 4) for the 7clock
 
@@ -12,34 +12,42 @@
 #include "SPIFFS.h"
 #include <ezTime.h>
 
-DisplayDriver::DisplayDriver():avg_compution_time(100) {
+DisplayDriver::DisplayDriver() : avg_compution_time(100)
+{
   last_update = millis();
-  //mDisplay_effect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
-  for (int i=0; i<4; ++i) {
+  // mDisplay_effect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
+  for (int i = 0; i < 4; ++i)
+  {
     glyphs[i] = new Glyph(LEDS_PER_SEGMENT);
   }
 }
 
-DisplayDriver::~DisplayDriver () {
+DisplayDriver::~DisplayDriver()
+{
   // destructor
 }
 
-void DisplayDriver::setup(bool isFirstTimeSetup) {
+void DisplayDriver::setup(bool isFirstTimeSetup)
+{
   setPower(0);
 
-  _gCurrentPalette = CRGBPalette16( CRGB::Black);
+  _gCurrentPalette = CRGBPalette16(CRGB::Black);
   //_gTargetPalette = CRGBPalette16( gGradientPalettes[0] );
-  for(int i=0;  i<4; i++) {
-  if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_PARALELL) {
-  glyphs[i]->attach(i, i);
+  for (int i = 0; i < 4; i++)
+  {
+    if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_PARALELL)
+    {
+      glyphs[i]->attach(i, i);
+    }
+    else if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL)
+    {
+      glyphs[i]->attach(i);
+    }
   }
-  else if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
-  glyphs[i]->attach(i);
-  }
-  }
-  if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
-  _all_leds = new CRGB[SEGMENT_COUNT*LEDS_PER_SEGMENT*GLYPH_COUNT];
-  FastLED.addLeds<NEOPIXEL, DATA_PIN_0>(_all_leds, SEGMENT_COUNT*LEDS_PER_SEGMENT*GLYPH_COUNT);
+  if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL)
+  {
+    _all_leds = new CRGB[SEGMENT_COUNT * LEDS_PER_SEGMENT * GLYPH_COUNT];
+    FastLED.addLeds<NEOPIXEL, DATA_PIN_0>(_all_leds, SEGMENT_COUNT * LEDS_PER_SEGMENT * GLYPH_COUNT);
   }
 
   _solidColor.h = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_H);
@@ -47,8 +55,9 @@ void DisplayDriver::setup(bool isFirstTimeSetup) {
   _solidColor.v = siebenuhr::Controller::getInstance()->readFromEEPROM(EEPROM_ADDRESS_V);
   debug_value("bootup HUE", _solidColor.h);
   // FIXME next if can be deleted, once the initatilizations upstairs works
-  if(_solidColor.h == 0 && _solidColor.s == 0 && _solidColor.v == 0) {
-  _solidColor = DEFAULT_COLOR;
+  if (_solidColor.h == 0 && _solidColor.s == 0 && _solidColor.v == 0)
+  {
+    _solidColor = DEFAULT_COLOR;
   }
   _solidColor_previous = _solidColor;
   set_color(_solidColor);
@@ -61,139 +70,176 @@ void DisplayDriver::setup(bool isFirstTimeSetup) {
   setPower(1);
 }
 
-
 /*
     update
 
     Low level method that updates the display and actually does all the magic
 */
 /**************************************************************************/
-void DisplayDriver::update() {
+void DisplayDriver::update()
+{
   events(); // give the ezTime-lib it's processing cycle.....
   unsigned long now = millis();
-  if(now - last_update >= DISPLAY_REFRESH_INTERVAL) {
+  if (now - last_update >= DISPLAY_REFRESH_INTERVAL)
+  {
     unsigned long t_1 = millis();
-    switch(mOperation_mode) {
-      case OPERATION_MODE_CLOCK_HOURS:            update_clock(); break;
-      case OPERATION_MODE_CLOCK_MINUTES:          update_clock(); break;
-      case OPERATION_MODE_MESSAGE:                update_display_as_notification(); break;
-      case OPERATION_MODE_PROGRESS_BAR_BOTTOM:    update_progress_bar(); break;
-      case OPERATION_MODE_PROGRESS_BAR_COMPLETE:  update_progress_bar_complete(); break;
-      case OPERATION_MODE_PHOTO_SHOOTING:         update_clock(); break;
+    switch (mOperation_mode)
+    {
+    case OPERATION_MODE_CLOCK_HOURS:
+      update_clock();
+      break;
+    case OPERATION_MODE_CLOCK_MINUTES:
+      update_clock();
+      break;
+    case OPERATION_MODE_MESSAGE:
+      update_display_as_notification();
+      break;
+    case OPERATION_MODE_PROGRESS_BAR_BOTTOM:
+      update_progress_bar();
+      break;
+    case OPERATION_MODE_PROGRESS_BAR_COMPLETE:
+      update_progress_bar_complete();
+      break;
+    case OPERATION_MODE_PHOTO_SHOOTING:
+      update_clock();
+      break;
     }
+
     last_update = now;
-    if(SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
-      for (int i=0; i<4; i++) {
-        memmove( &_all_leds[glyphs[i]->_glyph_offset], &glyphs[i]->_leds[0], LEDS_PER_SEGMENT*SEGMENT_COUNT * sizeof( CRGB) );
+    if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL)
+    {
+      for (int i = 0; i < 4; i++)
+      {
+        memmove(&_all_leds[glyphs[i]->_glyph_offset], &glyphs[i]->_leds[0], LEDS_PER_SEGMENT * SEGMENT_COUNT * sizeof(CRGB));
       }
     }
+
     FastLED.show();
     unsigned long t_2 = millis();
-    avg_compution_time.addValue(t_2-t_1);
+    avg_compution_time.addValue(t_2 - t_1);
     compution_time_update_count++;
   }
-  if (compution_time_update_count >= DISPLAY_FREQUENCY) {
+
+  if (compution_time_update_count >= DISPLAY_FREQUENCY)
+  {
     compution_time_update_count = 0;
-    if (DEBUG_COMPUTION_TIME) {
+    if (DEBUG_COMPUTION_TIME)
+    {
       Serial.print("DEBUG    ø Compution Time: ");
       Serial.println(avg_compution_time.getAverage());
     }
   }
 }
 
-void DisplayDriver::update_display_as_notification() {
+void DisplayDriver::update_display_as_notification()
+{
   uint32_t now = millis();
-  if(now<mDisplay_notification_until || mDisplay_notification_until == 0) {
-    for(int i=0; i<4; i++) {
+  if (now < mDisplay_notification_until || mDisplay_notification_until == 0)
+  {
+    for (int i = 0; i < 4; i++)
+    {
       glyphs[i]->update_blending_to_next_color();
       glyphs[i]->update();
     }
   }
-  else {
+  else
+  {
     disable_notification();
   }
 }
 
-void DisplayDriver::update_clock() {
+void DisplayDriver::update_clock()
+{
   // let's start with the operations mode (the WHAT to display)
-  if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != mLast_clock_update || check_for_redraw())) {
+  if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != mLast_clock_update || check_for_redraw()))
+  {
     mLast_clock_update = minute();
-    char message[4] { 0, 0, 0, 0 };
-    message[0] = (int) floor(hour()/10) + '0';
-    message[1] = hour()%10 + '0';
-    message[2] = (int) floor(minute()/10) + '0';
-    message[3] = minute()%10 + '0';
+    char message[4]{0, 0, 0, 0};
+    message[0] = (int)floor(hour() / 10) + '0';
+    message[1] = hour() % 10 + '0';
+    message[2] = (int)floor(minute() / 10) + '0';
+    message[3] = minute() % 10 + '0';
     set_next_message(message);
     print_current_time();
     schedule_redraw();
   }
-  else if(get_operations_mode() == OPERATION_MODE_CLOCK_MINUTES && (second() != mLast_clock_update || check_for_redraw())) {
+  else if (get_operations_mode() == OPERATION_MODE_CLOCK_MINUTES && (second() != mLast_clock_update || check_for_redraw()))
+  {
     mLast_clock_update = second();
-    char message[4] { 0, 0, 0, 0 };
-    message[0] = (int) floor(minute()/10) + '0';
-    message[1] = minute()%10 + '0';
-    message[2] = (int) floor(second()/10) + '0';
-    message[3] = second()%10 + '0';
+    char message[4]{0, 0, 0, 0};
+    message[0] = (int)floor(minute() / 10) + '0';
+    message[1] = minute() % 10 + '0';
+    message[2] = (int)floor(second() / 10) + '0';
+    message[3] = second() % 10 + '0';
     set_next_message(message);
     print_current_time();
     schedule_redraw();
   }
-  else if(get_operations_mode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != mLast_clock_update || check_for_redraw())) {
+  else if (get_operations_mode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != mLast_clock_update || check_for_redraw()))
+  {
     mLast_clock_update = second();
-    char message[4] { 0, 0, 0, 0 };
-    message[0] = (int) floor(mPhotoshooting_hour/10) + '0';
-    message[1] = mPhotoshooting_hour%10 + '0';
-    message[2] = (int) floor(mPhotoshooting_minute/10) + '0';
-    message[3] = mPhotoshooting_minute%10 + '0';
+    char message[4]{0, 0, 0, 0};
+    message[0] = (int)floor(mPhotoshooting_hour / 10) + '0';
+    message[1] = mPhotoshooting_hour % 10 + '0';
+    message[2] = (int)floor(mPhotoshooting_minute / 10) + '0';
+    message[3] = mPhotoshooting_minute % 10 + '0';
     set_next_message(message);
     print_current_time();
     schedule_redraw();
   }
 
   // effect section, now we find out HOW to display the content on the display
-  if(check_for_redraw()) {
-    switch(mDisplay_effect) {
-      case DISPLAY_EFFECT_DAYLIGHT_WHEEL:
-      {
-        int sec_of_day = hour()*3600+minute()*60;
-        // +171 = midnight is blue
-        int color_wheel_angle = get_color_wheel_angle();
-        //sec_of_day = random(86400);
-        int hue_next = (int)((((float)sec_of_day/(float)86400)*255)+color_wheel_angle)%255;
-        // CHSV color_of_day_next = CHSV( hue_next, 255, 220);
-        // int hue = (int)((((float)(sec_of_day-60)/(float)86400)*255)+color_wheel_angle)%255;
-        int saturation = 255;
-        int value = 220;
-        CHSV color_of_day_next = CHSV( hue_next, saturation, value);
-        set_next_color(color_of_day_next, check_for_special_blending_period());
-        break;
-      }
-      case DISPLAY_EFFECT_SOLID_COLOR: {
-        set_next_color(_solidColor, check_for_special_blending_period());
-        break;
-      }
-      case DISPLAY_EFFECT_RANDOM_COLOR:
-      {
-        CHSV color_next = CHSV( random(255), 255, 220);
-        set_next_color(color_next, check_for_special_blending_period());
-        break;
-      }
+  if (check_for_redraw())
+  {
+    switch (mDisplay_effect)
+    {
+    case DISPLAY_EFFECT_DAYLIGHT_WHEEL:
+    {
+      int sec_of_day = hour() * 3600 + minute() * 60;
+      // +171 = midnight is blue
+      int color_wheel_angle = get_color_wheel_angle();
+      // sec_of_day = random(86400);
+      int hue_next = (int)((((float)sec_of_day / (float)86400) * 255) + color_wheel_angle) % 255;
+      // CHSV color_of_day_next = CHSV( hue_next, 255, 220);
+      // int hue = (int)((((float)(sec_of_day-60)/(float)86400)*255)+color_wheel_angle)%255;
+      int saturation = 255;
+      int value = 220;
+      CHSV color_of_day_next = CHSV(hue_next, saturation, value);
+      set_next_color(color_of_day_next, check_for_special_blending_period());
+      break;
+    }
+    case DISPLAY_EFFECT_SOLID_COLOR:
+    {
+      set_next_color(_solidColor, check_for_special_blending_period());
+      break;
+    }
+    case DISPLAY_EFFECT_RANDOM_COLOR:
+    {
+      CHSV color_next = CHSV(random(255), 255, 220);
+      set_next_color(color_next, check_for_special_blending_period());
+      break;
+    }
     }
   }
-  for(int i=0; i<4; i++) {
+  for (int i = 0; i < 4; i++)
+  {
     glyphs[i]->update_blending_to_next_color();
     glyphs[i]->update();
   }
 }
 
-void DisplayDriver::update_progress_bar() {
-  for(int i=0; i<4; i++) {
+void DisplayDriver::update_progress_bar()
+{
+  for (int i = 0; i < 4; i++)
+  {
     glyphs[i]->update_progress_bar();
   }
 }
 
-void DisplayDriver::update_progress_bar_complete() {
-  for(int i=0; i<4; i++) {
+void DisplayDriver::update_progress_bar_complete()
+{
+  for (int i = 0; i < 4; i++)
+  {
     glyphs[i]->update_progress_bar_complete();
   }
 }
@@ -208,14 +254,16 @@ void DisplayDriver::update_progress_bar_complete() {
     A notification is only displayed for a specified time.
 */
 /**************************************************************************/
-void DisplayDriver::set_next_message(char message[4], int fade_interval) {
-  //Serial.print("Next message: ");
-  for(int i=0; i<4; i++) {
+void DisplayDriver::set_next_message(char message[4], int fade_interval)
+{
+  // Serial.print("Next message: ");
+  for (int i = 0; i < 4; i++)
+  {
     mCurrent_message[i] = message[i];
     glyphs[i]->set_next_char(message[i], fade_interval);
-    //Serial.print(message[i]);
+    // Serial.print(message[i]);
   }
-  //Serial.println("");
+  // Serial.println("");
 }
 
 /**************************************************************************/
@@ -229,25 +277,30 @@ void DisplayDriver::set_next_message(char message[4], int fade_interval) {
     of this notification
 */
 /**************************************************************************/
-void DisplayDriver::set_notification(String notificationString, uint32_t milliseconds) {
-    char notification[4];
-    strncpy(notification, notificationString.c_str(),4);
-    set_notification( notification, milliseconds);
+void DisplayDriver::set_notification(String notificationString, uint32_t milliseconds)
+{
+  char notification[4];
+  strncpy(notification, notificationString.c_str(), 4);
+  set_notification(notification, milliseconds);
 }
 
-void DisplayDriver::set_notification(char notification[4], uint32_t milliseconds) {
-  if(mOperation_mode != OPERATION_MODE_MESSAGE) {
+void DisplayDriver::set_notification(char notification[4], uint32_t milliseconds)
+{
+  if (mOperation_mode != OPERATION_MODE_MESSAGE)
+  {
     mOperation_mode_before_notification = mOperation_mode;
-    //mMessage_prior_to_notification = mCurrent_message;
+    // mMessage_prior_to_notification = mCurrent_message;
     strncpy(mMessage_prior_to_notification, mCurrent_message, 4);
     mSolid_color_prior_to_notification = _solidColor;
   }
   mOperation_mode = OPERATION_MODE_MESSAGE;
   mNotification_set = 1;
-  if (milliseconds>0) {
+  if (milliseconds > 0)
+  {
     mDisplay_notification_until = millis() + milliseconds;
   }
-  else {
+  else
+  {
     mDisplay_notification_until = 0;
   }
   set_color(NOTIFICATION_COLOR);
@@ -262,9 +315,11 @@ void DisplayDriver::set_notification(char notification[4], uint32_t milliseconds
     Manually disable the display of a notification (prior to its TTL).
 */
 /**************************************************************************/
-void DisplayDriver::disable_notification() {
+void DisplayDriver::disable_notification()
+{
   mDisplay_notification_until = millis();
-  if (  mNotification_set ) {
+  if (mNotification_set)
+  {
     mOperation_mode = mOperation_mode_before_notification;
     strncpy(mCurrent_message, mMessage_prior_to_notification, 4);
     mNotification_set = 0;
@@ -275,18 +330,23 @@ void DisplayDriver::disable_notification() {
   schedule_redraw();
 }
 
-int DisplayDriver::is_notification_set() {
+int DisplayDriver::is_notification_set()
+{
   return mNotification_set;
 }
 
-void DisplayDriver::get_current_message(char* current_message) {
-  for(int i=0; i < 4; ++i){
+void DisplayDriver::get_current_message(char *current_message)
+{
+  for (int i = 0; i < 4; ++i)
+  {
     current_message[i] = mCurrent_message[i];
   }
 }
 
-void DisplayDriver::set_next_color(CHSV color, int interval_ms) {
-  for(int i=0; i<4; i++) {
+void DisplayDriver::set_next_color(CHSV color, int interval_ms)
+{
+  for (int i = 0; i < 4; i++)
+  {
     glyphs[i]->set_next_color(color, interval_ms);
   }
 }
@@ -299,33 +359,41 @@ void DisplayDriver::set_next_color(CHSV color, int interval_ms) {
 */
 /**************************************************************************/
 
-void DisplayDriver::set_color(const struct CHSV& color) {
+void DisplayDriver::set_color(const struct CHSV &color)
+{
   _solidColor = color;
-  for(int i=0;  i<4; i++) {
+  for (int i = 0; i < 4; i++)
+  {
     glyphs[i]->set_color(color);
   }
 }
 
-void DisplayDriver::save_and_set_new_default_solid_color(const struct CHSV& color) {
+void DisplayDriver::save_and_set_new_default_solid_color(const struct CHSV &color)
+{
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
   set_color(color);
 }
 
-uint8_t DisplayDriver::getPower() {
+uint8_t DisplayDriver::getPower()
+{
   return _power;
 }
 
-void DisplayDriver::setPower(uint8_t value) {
-  if (_power != value) {
+void DisplayDriver::setPower(uint8_t value)
+{
+  if (_power != value)
+  {
     _power = value;
-    if (value == 1) {
+    if (value == 1)
+    {
       _solidColor = _solidColor_previous;
       set_color(_solidColor);
       _powerIsDown = false;
     }
-    else {
+    else
+    {
       _solidColor_previous = _solidColor;
       set_color(CHSV(0, 0, 0));
       _powerIsDown = true;
@@ -333,14 +401,16 @@ void DisplayDriver::setPower(uint8_t value) {
   }
 }
 
-CHSV DisplayDriver::get_solid_color() {
+CHSV DisplayDriver::get_solid_color()
+{
   return _solidColor;
 }
 
-String DisplayDriver::getSolidColorHex() {
+String DisplayDriver::getSolidColorHex()
+{
   // FIXME: totally broken since move to HSV-mode - need to be rewritten
   char hex[7] = {0};
-  sprintf(hex,"%02X%02X%02X",_solidColor.h,_solidColor.s,_solidColor.v); //convert to an hexadecimal string. Lookup sprintf for what %02X means.
+  sprintf(hex, "%02X%02X%02X", _solidColor.h, _solidColor.s, _solidColor.v); // convert to an hexadecimal string. Lookup sprintf for what %02X means.
   return hex;
 }
 
@@ -348,9 +418,9 @@ void DisplayDriver::set_display_effect(uint8_t value)
 {
   // don't wrap around at the ends
   if (value < 0)
-  value = 0;
+    value = 0;
   else if (value >= _display_effects_count)
-  value = _display_effects_count - 1;
+    value = _display_effects_count - 1;
   mDisplay_effect = value;
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
 }
@@ -369,7 +439,7 @@ String DisplayDriver::get_display_effect_json()
   return json;
 }
 
-const char* DisplayDriver::get_display_effect_short()
+const char *DisplayDriver::get_display_effect_short()
 {
   return _display_effects_short[mDisplay_effect];
 }
@@ -383,22 +453,25 @@ void DisplayDriver::adjust_and_save_new_display_effect(bool up)
     mDisplay_effect--;
   // wrap around at the ends
   if (mDisplay_effect < 0)
-  mDisplay_effect = 0;
+    mDisplay_effect = 0;
   else if (mDisplay_effect >= _display_effects_count)
-  mDisplay_effect = _display_effects_count - 1;
+    mDisplay_effect = _display_effects_count - 1;
   Serial.print("current display effect: ");
   Serial.println(mDisplay_effect);
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
 }
 
-void DisplayDriver::set_operations_mode(uint8_t mode) {
-  mOperation_mode  = mode;
-  if (mode == OPERATION_MODE_PHOTO_SHOOTING) {
+void DisplayDriver::set_operations_mode(uint8_t mode)
+{
+  mOperation_mode = mode;
+  if (mode == OPERATION_MODE_PHOTO_SHOOTING)
+  {
     set_display_effect(DISPLAY_EFFECT_SOLID_COLOR);
   }
 }
 
-uint8_t DisplayDriver::get_operations_mode() {
+uint8_t DisplayDriver::get_operations_mode()
+{
   return mOperation_mode;
 }
 
@@ -406,22 +479,29 @@ uint8_t DisplayDriver::get_operations_mode() {
 Geters and setters for the brightness
 */
 
-uint8_t DisplayDriver::get_brightness() {
+uint8_t DisplayDriver::get_brightness()
+{
   return _brightness;
 }
 
-void DisplayDriver::set_brightness(uint8_t value) {
+void DisplayDriver::set_brightness(uint8_t value)
+{
   // don't wrap around at the ends
-  //value = round(value * 2.5);
-  if (value > 255) value = 255;
-  else if (value < 0) value = 0;
+  // value = round(value * 2.5);
+  if (value > 255)
+    value = 255;
+  else if (value < 0)
+    value = 0;
   _brightness = value;
   FastLED.setBrightness(_brightness);
 }
 
-void DisplayDriver::save_and_set_new_default_brightness(uint8_t value) {
-  if (value > 255) value = 255;
-  else if (value < 0) value = 0;
+void DisplayDriver::save_and_set_new_default_brightness(uint8_t value)
+{
+  if (value > 255)
+    value = 255;
+  else if (value < 0)
+    value = 0;
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_BRIGHTNESS, value);
   set_brightness(value);
 }
@@ -439,13 +519,15 @@ void DisplayDriver::save_and_set_new_default_brightness(uint8_t value) {
 // int _brightnessIndex = 5;
 // uint8_t _brightness = _brightnessMap[_brightnessIndex];
 
-
-uint8_t DisplayDriver::get_brightness_index() {
+uint8_t DisplayDriver::get_brightness_index()
+{
   int minDelta = 255;
   int minDeltaIndex = 0;
-  for(int i=0; i<_brightnessIndexCount; i++) {
+  for (int i = 0; i < _brightnessIndexCount; i++)
+  {
     int delta = abs(_brightness - _brightnessMap[i]);
-    if (delta <= minDelta) {
+    if (delta <= minDelta)
+    {
       minDelta = delta;
       minDeltaIndex = i;
     }
@@ -462,12 +544,15 @@ uint8_t DisplayDriver::get_brightness_index() {
  */
 /**************************************************************************/
 
-void DisplayDriver::set_brightness_index(int value) {
+void DisplayDriver::set_brightness_index(int value)
+{
   // don't wrap around at the ends
-  //value = round(value * 2.5);
+  // value = round(value * 2.5);
 
-  if (value > _brightnessIndexCount - 1) value = _brightnessIndexCount - 1;
-  else if (value < 0) value = 0;
+  if (value > _brightnessIndexCount - 1)
+    value = _brightnessIndexCount - 1;
+  else if (value < 0)
+    value = 0;
   set_brightness(_brightnessMap[value]);
 }
 
@@ -481,12 +566,12 @@ void DisplayDriver::set_brightness_index(int value) {
  */
 /**************************************************************************/
 
-void DisplayDriver::save_and_set_new_default_brightness_index(int value) {
+void DisplayDriver::save_and_set_new_default_brightness_index(int value)
+{
   set_brightness_index(value);
   value = get_brightness_index();
   save_and_set_new_default_brightness(_brightnessMap[value]);
 }
-
 
 /**************************************************************************/
 /*
@@ -496,7 +581,8 @@ void DisplayDriver::save_and_set_new_default_brightness_index(int value) {
 */
 /**************************************************************************/
 
-uint8_t DisplayDriver::get_timezone_hour() {
+uint8_t DisplayDriver::get_timezone_hour()
+{
   return mTimezone;
 }
 
@@ -508,14 +594,15 @@ uint8_t DisplayDriver::get_timezone_hour() {
  */
 /**************************************************************************/
 
-void DisplayDriver::set_timezone_hour(int value) {
+void DisplayDriver::set_timezone_hour(int value)
+{
   mTimezone = value;
   // FIXME EZTIME timezone can no longer be set
   // Timezone myTZ;
   // myTZ.setLocation(F("Europe/Zurich"));
   // Serial.println(myTZ.dateTime());
-  //m_pNTP->setTimeZone(mTimezone, 0);
-  //set_brightness(_brightnessMap[value]);
+  // m_pNTP->setTimeZone(mTimezone, 0);
+  // set_brightness(_brightnessMap[value]);
 }
 
 /**************************************************************************/
@@ -526,7 +613,8 @@ void DisplayDriver::set_timezone_hour(int value) {
  */
 /**************************************************************************/
 
-void DisplayDriver::save_and_set_new_default_timezone_hour(int value) {
+void DisplayDriver::save_and_set_new_default_timezone_hour(int value)
+{
   set_timezone_hour(value);
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, value);
 }
@@ -537,27 +625,35 @@ void DisplayDriver::save_and_set_new_default_timezone_hour(int value) {
  */
 /**************************************************************************/
 
-void DisplayDriver::set_new_default_timezone(String inTimezone) {
+void DisplayDriver::set_new_default_timezone(String inTimezone)
+{
   _ezTimeTimezone.setLocation(inTimezone);
   _ezTimeTimezone.setDefault();
 }
 
-uint8_t DisplayDriver::get_color_wheel_angle() {
+uint8_t DisplayDriver::get_color_wheel_angle()
+{
   return mColor_wheel_angle;
 }
 
-void DisplayDriver::set_color_wheel_angle(uint8_t value) {
+void DisplayDriver::set_color_wheel_angle(uint8_t value)
+{
   // don't wrap around at the ends
-  if (value > 255) value = 255;
-  else if (value < 0) value = 0;
+  if (value > 255)
+    value = 255;
+  else if (value < 0)
+    value = 0;
   mColor_wheel_angle = value;
-  //update_clock(true);
+  // update_clock(true);
   schedule_redraw();
 }
 
-void DisplayDriver::save_new_color_wheel_angle(uint8_t value) {
-  if (value > 255) value = 255;
-  else if (value < 0) value = 0;
+void DisplayDriver::save_new_color_wheel_angle(uint8_t value)
+{
+  if (value > 255)
+    value = 255;
+  else if (value < 0)
+    value = 0;
   siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, value);
   set_color_wheel_angle(value);
 }
@@ -572,7 +668,8 @@ void DisplayDriver::save_new_color_wheel_angle(uint8_t value) {
     (mostly, because of another message has reached its TTL).
 */
 /**************************************************************************/
-void DisplayDriver::schedule_redraw() {
+void DisplayDriver::schedule_redraw()
+{
   mRedraw_scheduled = true;
 }
 
@@ -585,8 +682,10 @@ void DisplayDriver::schedule_redraw() {
     method)
 */
 /**************************************************************************/
-bool DisplayDriver::check_for_redraw() {
-  if(mRedraw_scheduled) {
+bool DisplayDriver::check_for_redraw()
+{
+  if (mRedraw_scheduled)
+  {
     mRedraw_scheduled = false;
     return true;
   }
@@ -607,15 +706,15 @@ bool DisplayDriver::check_for_redraw() {
     should not be the case.
 */
 /**************************************************************************/
-void DisplayDriver::schedule_redraw_with_special_blending_period(int blending_period) {
+void DisplayDriver::schedule_redraw_with_special_blending_period(int blending_period)
+{
   // if blending_period != default value set it
-  if(blending_period != BLENDIG_PERIOD)
+  if (blending_period != BLENDIG_PERIOD)
     mNext_redraw_blending_period = blending_period;
-  if(mNext_redraw_blending_period < 2*DISPLAY_REFRESH_INTERVAL)
-    mNext_redraw_blending_period = 2*DISPLAY_REFRESH_INTERVAL;
+  if (mNext_redraw_blending_period < 2 * DISPLAY_REFRESH_INTERVAL)
+    mNext_redraw_blending_period = 2 * DISPLAY_REFRESH_INTERVAL;
   mRedraw_scheduled = true;
 }
-
 
 /**************************************************************************/
 /*
@@ -625,13 +724,16 @@ void DisplayDriver::schedule_redraw_with_special_blending_period(int blending_pe
     and reset it. Otherwise return BLENDIG_PERIOD (the default)
 */
 /**************************************************************************/
-int DisplayDriver::check_for_special_blending_period() {
-  if(mNext_redraw_blending_period != BLENDIG_PERIOD) {
+int DisplayDriver::check_for_special_blending_period()
+{
+  if (mNext_redraw_blending_period != BLENDIG_PERIOD)
+  {
     int blending_period = mNext_redraw_blending_period;
     mNext_redraw_blending_period = BLENDIG_PERIOD;
     return blending_period;
   }
-  else {
+  else
+  {
     return BLENDIG_PERIOD;
   }
 }
@@ -665,7 +767,7 @@ String DisplayDriver::getStatus()
     json += "\"" + String(_display_effects[i]) + "\"";
     // json += "\"foo\"";
     if (i < _display_effects_count - 1)
-    json += ",";
+      json += ",";
   }
   json += "]";
 
@@ -673,8 +775,9 @@ String DisplayDriver::getStatus()
   return json;
 }
 
-struct CRGB DisplayDriver::hexToRGB(String hex) {
-  int number = (int) strtol( &hex[0], NULL, 16);
+struct CRGB DisplayDriver::hexToRGB(String hex)
+{
+  int number = (int)strtol(&hex[0], NULL, 16);
   int r = number >> 16;
   int g = number >> 8 & 0xFF;
   int b = number & 0xFF;
@@ -682,15 +785,18 @@ struct CRGB DisplayDriver::hexToRGB(String hex) {
   return rgbColor;
 }
 
-String DisplayDriver::RGBToHex(struct CRGB rgbColor) {
+String DisplayDriver::RGBToHex(struct CRGB rgbColor)
+{
   static char hex[7] = {0};
-  sprintf(hex,"%02X-%02X-%02X",rgbColor.r,rgbColor.g,rgbColor.b); //convert to an hexadecimal string. Lookup sprintf for what %02X means.
+  sprintf(hex, "%02X-%02X-%02X", rgbColor.r, rgbColor.g, rgbColor.b); // convert to an hexadecimal string. Lookup sprintf for what %02X means.
   return String(hex);
 }
 
-void DisplayDriver::print_current_time() {
-    if (millis()-_nLastTimePrintUpdate > 1000) {
-        _nLastTimePrintUpdate = millis();
-        Serial.println(formatString("%02d:%02d:%02d %d.%d.%d", hour(), minute(), second(), day(), month(), year()));
-    }
+void DisplayDriver::print_current_time()
+{
+  if (millis() - _nLastTimePrintUpdate > 1000)
+  {
+    _nLastTimePrintUpdate = millis();
+    Serial.println(formatString("%02d:%02d:%02d %d.%d.%d", hour(), minute(), second(), day(), month(), year()));
+  }
 }

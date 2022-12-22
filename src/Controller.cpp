@@ -157,7 +157,6 @@ bool Controller::initializeDebug(bool enabled, int baud, int waitMilliseconds) {
 	_bDebugEnabled = enabled;
 	if (enabled) {
         Serial.begin(baud);
-        delay(waitMilliseconds); // for the console to relax and open
 		debugMessage("\n7Uhr debugging enabled.");
 	}
 	return true;
@@ -378,5 +377,15 @@ void Controller::handleUIKnob() {
 			_pDisplay->schedule_redraw_with_special_blending_period(0);
 			break;
         }
+
+		default: {
+			// by default, turning the knob defines the brightness of the clock
+			int brightness_index = _pDisplay->get_brightness_index();
+			brightness_index += encoderDelta;
+			_pDisplay->save_and_set_new_default_brightness_index(brightness_index);
+			brightness_index = _pDisplay->get_brightness_index();
+			debugMessage(formatString("Brightness: %d", brightness_index));
+			break;
+		}
     }
 }

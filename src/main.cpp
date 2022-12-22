@@ -71,32 +71,23 @@ void _setup() {
         // FIXME move EEPROM part to better place, once refactoring of the DisplayDriver is done
         _cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
         if(!findTimezoneMatch(_cTimezone)) {
-           Serial.println("EEPROM timezone didn't match any existing timezone. The value searched for was: ");
-           Serial.println(_cTimezone);
-           Serial.print("Saving timezone from captive portal or default value to EEPROM: '");
-           Serial.print(captive_portal_timezone.getValue());
-           Serial.println("'");
+            _inst->debugMessage(formatString("EEPROM timezone didn't match any existing timezone. The value searched for was: %s", _cTimezone.c_str()));
+            _inst->debugMessage(formatString("Saving timezone from captive portal or default value to EEPROM: %s", captive_portal_timezone.getValue()));
            EEPROMWriteString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, captive_portal_timezone.getValue(), EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
         }
     #endif
 
     _cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
-    Serial.print("Timezone (EEPROM) : ");
-    Serial.println(_cTimezone);
-    Serial.print("SSID              : ");
-    Serial.println(WiFi.SSID());
-    Serial.print("IP address (DHCP) : ");
-    Serial.println(WiFi.localIP());
-    Serial.print("MAC address is    : ");
-    Serial.println(WiFi.macAddress());
+    _inst->debugMessage(formatString("Timezone (EEPROM) : %s", _cTimezone.c_str()));
+    _inst->debugMessage(formatString("SSID              : %s", WiFi.SSID()));
+    _inst->debugMessage(formatString("IP address (DHCP) : %s", WiFi.localIP()));
+    _inst->debugMessage(formatString("MAC address is    : %s", WiFi.macAddress()));
 
     //initialize mDNS service
     const char * instanceName = "siebenuhr";
     if (!MDNS.begin(instanceName)) {
-        Serial.println("Error setting up MDNS responder!");
-        while(1) {
-            delay(1000);
-        }
+        _inst->debugMessage("Error setting up MDNS responder!");
+        delay(1000);
     }
     mdns_hostname_set(instanceName);
     MDNS.addService("http", "tcp", 80);
