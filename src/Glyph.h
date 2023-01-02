@@ -1,6 +1,7 @@
 #ifndef GLYPH_H
 #define GLYPH_H
 
+#define FASTLED_INTERNAL
 #ifndef FASTLED_INTERRUPT_RETRY_COUNT
 #define FASTLED_INTERRUPT_RETRY_COUNT 0
 #endif
@@ -9,7 +10,7 @@
 #define FASTLED_ALLOW_INTERRUPTS 0
 #endif
 
-#include <FastLED.h>
+// #include <FastLED.h>
 #include "SiebenUhr.h"
 
 class Glyph {

@@ -147,7 +147,7 @@ bool Controller::initializeDisplay(DisplayDriver* display) {
 		return false;
 	}
 
-	_pDisplay->set_notification(_cMessage);
+	_pDisplay->setNotification(_cMessage);
 
 	_eState = CONTROLLER_STATE::initialized;
 	return true;
@@ -238,11 +238,11 @@ void Controller::handleUIResetButton() {
 	    if (countdown_int >= 0) {
 			_cMessage = formatString("rst%d", countdown_int);
 			debugMessage(_cMessage);
-			_pDisplay->set_notification(_cMessage);
+			_pDisplay->setNotification(_cMessage);
 	    } else {
 			_cMessage = "boom";
 			debugMessage("Restaring siebenuhr after WIFI-reset.");
-			_pDisplay->set_notification(_cMessage);
+			_pDisplay->setNotification(_cMessage);
 			// code in wifi manager is broken. Just called for debug messages....
 			_pWiFiManager->resetSettings();
 			// here comes the actual reset. Only works after WiFi.begin(); (!)
@@ -254,7 +254,7 @@ void Controller::handleUIResetButton() {
 			delay(3000);
 	    }
 	} else {
-	    _pDisplay->disable_notification();
+	    _pDisplay->disableNotification();
 	}
 }
 
@@ -262,7 +262,7 @@ void Controller::handleUIKnob() {
 	if(_pKnob->isPressed()) {
 		_nMenuCurPos = (_nMenuCurPos+1) == _nMenuMaxEntries ? 0 : _nMenuCurPos+1;
 		debugMessage(formatString("MENU: %s", _sMenu[_nMenuCurPos].name.c_str()));
-		_pDisplay->set_notification(_sMenu[_nMenuCurPos].message, 3000);
+		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 3000);
     }
 
   	int8_t encoderDelta = _pKnob->encoderChanged();
@@ -270,10 +270,10 @@ void Controller::handleUIKnob() {
 
 	switch(_sMenu[_nMenuCurPos].uid) {
 		case CONTROLLER_MENU::BRIGHTNESS: {
-			int brightness_index = _pDisplay->get_brightness_index();
+			int brightness_index = _pDisplay->getBrightnessIndex();
 			brightness_index += encoderDelta;
-			_pDisplay->save_and_set_new_default_brightness_index(brightness_index);
-			brightness_index = _pDisplay->get_brightness_index();
+			_pDisplay->setBrightnessIndex(brightness_index);
+			brightness_index = _pDisplay->getBrightnessIndex();
 			debugMessage(formatString("MENU: %s - Brightness: %d", _sMenu[_nMenuCurPos].name.c_str(), brightness_index));
 			break;
 		}
@@ -290,9 +290,9 @@ void Controller::handleUIKnob() {
 					break;
 				}
 				case DISPLAY_EFFECT_SOLID_COLOR: {
-					CHSV current_color = _pDisplay->get_solid_color();
+					CHSV current_color = _pDisplay->getColor();
 					current_color.hue += encoderDelta*2;
-					_pDisplay->save_and_set_new_default_solid_color(current_color);
+					_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
 					_pDisplay->schedule_redraw();
 					_pDisplay->schedule_redraw_with_special_blending_period(0);
 					break;
@@ -302,18 +302,18 @@ void Controller::handleUIKnob() {
 		}
 
 		case CONTROLLER_MENU::SATURATION: {
-          CHSV current_color = _pDisplay->get_solid_color();
-          int32_t saturation = current_color.saturation;
+			CHSV current_color = _pDisplay->getColor();
+			int32_t saturation = current_color.saturation;
 
-		  saturation += encoderDelta*3;
-          if (saturation >= 255) saturation = 255;
-          if (saturation <= 0) saturation = 0;
-          current_color.saturation = saturation;
+			saturation += encoderDelta*3;
+			if (saturation >= 255) saturation = 255;
+			if (saturation <= 0) saturation = 0;
+			current_color.saturation = saturation;
 
-          _pDisplay->save_and_set_new_default_solid_color(current_color);
-          _pDisplay->schedule_redraw();
-          _pDisplay->schedule_redraw_with_special_blending_period(0);
-          break;
+			_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
+			_pDisplay->schedule_redraw();
+			_pDisplay->schedule_redraw_with_special_blending_period(0);
+			break;
         }
 
 		case CONTROLLER_MENU::EFFECT: {
@@ -323,18 +323,18 @@ void Controller::handleUIKnob() {
 				_pDisplay->adjust_and_save_new_display_effect(false);
 			}
 			debugMessage(formatString("current effect: %d", _pDisplay->get_display_effect()));
-			_pDisplay->set_notification(_pDisplay->get_display_effect_short(), 3000);
+			_pDisplay->setNotification(_pDisplay->get_display_effect_short(), 3000);
 			break;
 		}
 
 		case CONTROLLER_MENU::TIMEZONE: {
-			int8_t timeZone = _pDisplay->get_timezone_hour();
+			int8_t timeZone = _pDisplay->getTimezoneHour();
 			debugMessage(formatString("current TZ: %d", timeZone));
 			// FIXME: before shipping to north korea et al I'll have to implenment half-hour timezones as well
 			if(encoderDelta>0) timeZone++;
 			else if (encoderDelta<0) timeZone--;
 			debugMessage(formatString("new TZ: %d", timeZone));
-			_pDisplay->set_timezone_hour(timeZone);
+			_pDisplay->setTimezoneHour(timeZone);
 
 			char notifcation[4] { 0, 0, 0, 0 };
 			if(timeZone>=0) {
@@ -354,7 +354,7 @@ void Controller::handleUIKnob() {
 			}
 			// TODO: Fix this. was : notifcation[3] = abs(timeZone)%10 + '0';
 			notifcation[3] = '0';
-			_pDisplay->set_notification(notifcation, 3000);
+			_pDisplay->setNotification(notifcation, 3000);
 			break;
 		}
 
@@ -380,10 +380,10 @@ void Controller::handleUIKnob() {
 
 		default: {
 			// by default, turning the knob defines the brightness of the clock
-			int brightness_index = _pDisplay->get_brightness_index();
+			int brightness_index = _pDisplay->getBrightnessIndex();
 			brightness_index += encoderDelta;
-			_pDisplay->save_and_set_new_default_brightness_index(brightness_index);
-			brightness_index = _pDisplay->get_brightness_index();
+			_pDisplay->setBrightnessIndex(brightness_index);
+			brightness_index = _pDisplay->getBrightnessIndex();
 			debugMessage(formatString("Brightness: %d", brightness_index));
 			break;
 		}

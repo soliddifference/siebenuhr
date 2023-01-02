@@ -27,21 +27,21 @@ DNSServer dns;
 AsyncWiFiManager wifiManager(&server, &dns);
 
 void setup() {
-    siebenuhr::Controller *_inst = siebenuhr::Controller::getInstance(); // just for convinience
-    if (_inst == nullptr)
+    siebenuhr::Controller *_cntrl = siebenuhr::Controller::getInstance(); // just for convinience
+    if (_cntrl == nullptr)
         return;
 
-    _inst->initializeDebug(true);
-    _inst->initializeEEPROM();
+    _cntrl->initializeDebug(true);
+    _cntrl->initializeEEPROM();
 
-    Display.setup(_inst->getFirstTimeSetup());
+    Display.setup(_cntrl->getFirstTimeSetup());
 
-    _inst->setResetButton(RESET_BUTTON);
-    _inst->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
+    _cntrl->setResetButton(RESET_BUTTON);
+    _cntrl->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
 
-    if (!_inst->initializeWifi(true, &wifiManager) || !_inst->initializeNTP(true) || !_inst->initializeDisplay(&Display)) {
-        _inst->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
-        _inst->debugMessage("7Uhr controller setup failed.");
+    if (!_cntrl->initializeWifi(true, &wifiManager) || !_cntrl->initializeNTP(true) || !_cntrl->initializeDisplay(&Display)) {
+        _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
+        _cntrl->debugMessage("7Uhr controller setup failed.");
         return;
     };
 }
@@ -93,7 +93,7 @@ void _setup() {
     MDNS.addService("http", "tcp", 80);
     mdns_instance_name_set(instanceName);
 
-    Display.set_notification("Sync");
+    Display.setNotification("Sync");
     Display.update();
 
     setDebug(INFO);
@@ -105,7 +105,7 @@ void _setup() {
     waitForSync();
 
     Display.set_new_default_timezone(_cTimezone);
-    Display.disable_notification();
+    Display.disableNotification();
     Display.set_operations_mode(OPERATION_MODE_CLOCK_HOURS);
 
     _inst->debugMessage("7Uhr controller setup complete.");
