@@ -147,7 +147,7 @@ void DisplayDriver::update_display_as_notification()
 
 void DisplayDriver::update_clock()
 {
-	if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != mLast_clock_update || check_for_redraw()))
+	if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != mLast_clock_update || checkForRedraw()))
 	{
 		mLast_clock_update = minute();
 		char message[4]{0, 0, 0, 0};
@@ -156,10 +156,10 @@ void DisplayDriver::update_clock()
 		message[2] = (int)floor(minute() / 10) + '0';
 		message[3] = minute() % 10 + '0';
 		setMessage(message);
-		print_current_time();
-		schedule_redraw();
+		printCurrentTime();
+		scheduleRedraw();
 	}
-	else if (get_operations_mode() == OPERATION_MODE_CLOCK_MINUTES && (second() != mLast_clock_update || check_for_redraw()))
+	else if (get_operations_mode() == OPERATION_MODE_CLOCK_MINUTES && (second() != mLast_clock_update || checkForRedraw()))
 	{
 		mLast_clock_update = second();
 		char message[4]{0, 0, 0, 0};
@@ -168,10 +168,10 @@ void DisplayDriver::update_clock()
 		message[2] = (int)floor(second() / 10) + '0';
 		message[3] = second() % 10 + '0';
 		setMessage(message);
-		print_current_time();
-		schedule_redraw();
+		printCurrentTime();
+		scheduleRedraw();
 	}
-	else if (get_operations_mode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != mLast_clock_update || check_for_redraw()))
+	else if (get_operations_mode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != mLast_clock_update || checkForRedraw()))
 	{
 		mLast_clock_update = second();
 		char message[4]{0, 0, 0, 0};
@@ -180,12 +180,12 @@ void DisplayDriver::update_clock()
 		message[2] = (int)floor(mPhotoshooting_minute / 10) + '0';
 		message[3] = mPhotoshooting_minute % 10 + '0';
 		setMessage(message);
-		print_current_time();
-		schedule_redraw();
+		printCurrentTime();
+		scheduleRedraw();
 	}
 
 	// effect section, now we find out HOW to display the content on the display
-	if (check_for_redraw()) {
+	if (checkForRedraw()) {
 		switch (mDisplay_effect) {
 			case DISPLAY_EFFECT_DAYLIGHT_WHEEL:
 			{
@@ -195,20 +195,20 @@ void DisplayDriver::update_clock()
 				int saturation = 255;
 				int value = 220;
 				CHSV color_of_day_next = CHSV(hue_next, saturation, value);
-				setNextColor(color_of_day_next, check_for_special_blending_period());
+				setNextColor(color_of_day_next, getSpecialBlendingPeriod());
 				break;
 			}
 
 			case DISPLAY_EFFECT_SOLID_COLOR:
 			{
-				setNextColor(_solidColor, check_for_special_blending_period());
+				setNextColor(_solidColor, getSpecialBlendingPeriod());
 				break;
 			}
 
 			case DISPLAY_EFFECT_RANDOM_COLOR:
 			{
 				CHSV color_next = CHSV(random(255), 255, 220);
-				setNextColor(color_next, check_for_special_blending_period());
+				setNextColor(color_next, getSpecialBlendingPeriod());
 				break;
 			}
 		}
@@ -323,7 +323,7 @@ void DisplayDriver::disableNotification()
 	}
 
 	// force the clock to update on the next cycle
-	schedule_redraw();
+	scheduleRedraw();
 }
 
 int DisplayDriver::isNotificationSet()
@@ -560,7 +560,7 @@ void DisplayDriver::set_color_wheel_angle(uint8_t value)
 		value = 0;
 	mColor_wheel_angle = value;
 	// update_clock(true);
-	schedule_redraw();
+	scheduleRedraw();
 }
 
 void DisplayDriver::save_new_color_wheel_angle(uint8_t value)
@@ -575,33 +575,15 @@ void DisplayDriver::save_new_color_wheel_angle(uint8_t value)
 
 /**************************************************************************/
 /*
-		schedule_redraw
-
-		Tell the display to redraw itself on the next update-cycle.
-		This routine allows for an async redraw call that will not temper with
-		the update cycle but to tell the clock that it will have to redraw itself
-		(mostly, because of another message has reached its TTL).
-*/
-/**************************************************************************/
-void DisplayDriver::schedule_redraw()
-{
-	mRedraw_scheduled = true;
-}
-
-/**************************************************************************/
-/*
-		check_for_redraw
-
 		Check if a redraw has been scheduled. If so, return true and unschedule
 		the scheduled redraw (as it will have to be executed after callig this
 		method)
 */
 /**************************************************************************/
-bool DisplayDriver::check_for_redraw()
+bool DisplayDriver::checkForRedraw()
 {
-	if (mRedraw_scheduled)
-	{
-		mRedraw_scheduled = false;
+	if (_bRedrawScheduled) {
+		_bRedrawScheduled = false;
 		return true;
 	}
 	return false;
@@ -609,8 +591,19 @@ bool DisplayDriver::check_for_redraw()
 
 /**************************************************************************/
 /*
-		schedule_special_blending_period_for_next_redraw
+		Tell the display to redraw itself on the next update-cycle.
+		This routine allows for an async redraw call that will not temper with
+		the update cycle but to tell the clock that it will have to redraw itself
+		(mostly, because of another message has reached its TTL).
+*/
+/**************************************************************************/
+void DisplayDriver::scheduleRedraw()
+{
+	_bRedrawScheduled = true;
+}
 
+/**************************************************************************/
+/*
 		Tell the display to use a non_standard (BLENDIG_PERIOD is default)
 		blending period (in milliseconds) on the next redraw. Mostly used for
 		showing mNotifications or menu items that are triggered by the knob
@@ -621,36 +614,32 @@ bool DisplayDriver::check_for_redraw()
 		should not be the case.
 */
 /**************************************************************************/
-void DisplayDriver::schedule_redraw_with_special_blending_period(int blending_period)
+void DisplayDriver::scheduleRedraw(int blending_period)
 {
 	// if blending_period != default value set it
 	if (blending_period != BLENDIG_PERIOD)
-		mNext_redraw_blending_period = blending_period;
-	if (mNext_redraw_blending_period < 2 * DISPLAY_REFRESH_INTERVAL)
-		mNext_redraw_blending_period = 2 * DISPLAY_REFRESH_INTERVAL;
-	mRedraw_scheduled = true;
+		_nNextRedrawBlendingPeriod = blending_period;
+	if (_nNextRedrawBlendingPeriod < 2 * DISPLAY_REFRESH_INTERVAL)
+		_nNextRedrawBlendingPeriod = 2 * DISPLAY_REFRESH_INTERVAL;
+
+	scheduleRedraw();
 }
 
 /**************************************************************************/
 /*
-		check_for_special_blending_period
-
 		check if we hould blend with a special blending period and if yes, return
 		and reset it. Otherwise return BLENDIG_PERIOD (the default)
 */
 /**************************************************************************/
-int DisplayDriver::check_for_special_blending_period()
+int DisplayDriver::getSpecialBlendingPeriod()
 {
-	if (mNext_redraw_blending_period != BLENDIG_PERIOD)
-	{
-		int blending_period = mNext_redraw_blending_period;
-		mNext_redraw_blending_period = BLENDIG_PERIOD;
-		return blending_period;
+	if (_nNextRedrawBlendingPeriod != BLENDIG_PERIOD) {
+		int blendingPeriod = _nNextRedrawBlendingPeriod;
+		_nNextRedrawBlendingPeriod = BLENDIG_PERIOD;
+		return blendingPeriod;
 	}
-	else
-	{
-		return BLENDIG_PERIOD;
-	}
+
+	return BLENDIG_PERIOD;
 }
 
 String DisplayDriver::getStatus()
@@ -659,7 +648,6 @@ String DisplayDriver::getStatus()
 
 	json += "\"power\":" + String(_power) + ",";
 	json += "\"brightness\":" + String(_brightness) + ",";
-	// json += "\"speed\":" + String(_speed) + ",";
 
 	json += "\"current_display_effect\":{";
 	json += "\"index\":" + String(mDisplay_effect);
@@ -680,7 +668,6 @@ String DisplayDriver::getStatus()
 	for (uint8_t i = 0; i < _display_effects_count; i++)
 	{
 		json += "\"" + String(_display_effects[i]) + "\"";
-		// json += "\"foo\"";
 		if (i < _display_effects_count - 1)
 			json += ",";
 	}
@@ -690,7 +677,7 @@ String DisplayDriver::getStatus()
 	return json;
 }
 
-struct CRGB DisplayDriver::hexToRGB(String hex)
+struct CRGB DisplayDriver::convertHexToRGB(String hex)
 {
 	int number = (int)strtol(&hex[0], NULL, 16);
 	int r = number >> 16;
@@ -700,18 +687,15 @@ struct CRGB DisplayDriver::hexToRGB(String hex)
 	return rgbColor;
 }
 
-String DisplayDriver::RGBToHex(struct CRGB rgbColor)
+String DisplayDriver::convertRGBToHex(struct CRGB rgbColor)
 {
-	static char hex[7] = {0};
-	sprintf(hex, "%02X-%02X-%02X", rgbColor.r, rgbColor.g, rgbColor.b); // convert to an hexadecimal string. Lookup sprintf for what %02X means.
-	return String(hex);
+	return formatString("%02X-%02X-%02X", rgbColor.r, rgbColor.g, rgbColor.b);
 }
 
-void DisplayDriver::print_current_time()
+void DisplayDriver::printCurrentTime()
 {
-	if (millis() - _nLastTimePrintUpdate > 1000)
-	{
+	if (millis() - _nLastTimePrintUpdate > 1000) {
 		_nLastTimePrintUpdate = millis();
-		Serial.println(formatString("%02d:%02d:%02d %d.%d.%d", hour(), minute(), second(), day(), month(), year()));
+		siebenuhr::Controller::getInstance()->debugMessage(formatString("%02d:%02d:%02d %d.%d.%d", hour(), minute(), second(), day(), month(), year()));
 	}
 }

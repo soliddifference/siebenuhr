@@ -285,16 +285,14 @@ void Controller::handleUIKnob() {
 					uint8_t color_wheel_angle = _pDisplay->get_color_wheel_angle();
 					color_wheel_angle += encoderDelta*2;
 					_pDisplay->save_new_color_wheel_angle(color_wheel_angle);
-					_pDisplay->schedule_redraw();
-					_pDisplay->schedule_redraw_with_special_blending_period(0);
+					_pDisplay->scheduleRedraw(0);
 					break;
 				}
 				case DISPLAY_EFFECT_SOLID_COLOR: {
 					CHSV current_color = _pDisplay->getColor();
 					current_color.hue += encoderDelta*2;
 					_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
-					_pDisplay->schedule_redraw();
-					_pDisplay->schedule_redraw_with_special_blending_period(0);
+					_pDisplay->scheduleRedraw(0);
 					break;
 				}
 			}
@@ -311,8 +309,7 @@ void Controller::handleUIKnob() {
 			current_color.saturation = saturation;
 
 			_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
-			_pDisplay->schedule_redraw();
-			_pDisplay->schedule_redraw_with_special_blending_period(0);
+			_pDisplay->scheduleRedraw(0);
 			break;
         }
 
@@ -363,8 +360,7 @@ void Controller::handleUIKnob() {
 			int8_t hour_delta = encoderDelta;
 			ts += hour_delta*3600;
 			setTime(ts);
-			_pDisplay->schedule_redraw();
-			_pDisplay->schedule_redraw_with_special_blending_period(0);
+			_pDisplay->scheduleRedraw(0);
 			break;
         }
 
@@ -373,8 +369,7 @@ void Controller::handleUIKnob() {
 			int8_t min_delta = encoderDelta;
 			ts += min_delta*60;
 			setTime(ts);
-			_pDisplay->schedule_redraw();
-			_pDisplay->schedule_redraw_with_special_blending_period(0);
+			_pDisplay->scheduleRedraw(0);
 			break;
         }
 

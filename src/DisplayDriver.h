@@ -35,8 +35,8 @@ public:
 	uint8_t getPower();
 	void setPower(uint8_t power);
 
-	struct CRGB hexToRGB(String hex);
-	String RGBToHex(struct CRGB rgbColor);
+	struct CRGB convertHexToRGB(String hex);
+	String convertRGBToHex(struct CRGB rgbColor);
 
 	/* set and get the current display effect of the clock. The display effect
 		 defines, _how_things are displayed on the clockmode in contrast to the
@@ -75,8 +75,8 @@ public:
 	void set_operations_mode(uint8_t mode);
 	uint8_t get_operations_mode();
 
-	void schedule_redraw();
-	void schedule_redraw_with_special_blending_period(int blending_period);
+	void scheduleRedraw();
+	void scheduleRedraw(int blending_period);
 
 	uint8_t mPhotoshooting_hour = 19;
 	uint8_t mPhotoshooting_minute = 37;
@@ -129,8 +129,8 @@ private:
 	char mMessage_prior_to_notification[4];
 	struct CHSV mSolid_color_prior_to_notification;
 
-	bool mRedraw_scheduled = false;										 // set to true, if the clock requires a redraw
-	int mNext_redraw_blending_period = BLENDIG_PERIOD; // for the next redraw, use this blending period
+	bool _bRedrawScheduled = false;						// set to true, if the clock requires a redraw
+	int _nNextRedrawBlendingPeriod = BLENDIG_PERIOD; 	// for the next redraw, use this blending period
 	// analyse the current compution time for the update cycle (for debugging)
 	RunningAverage avg_compution_time;
 	int compution_time_update_count = 0;
@@ -140,11 +140,12 @@ private:
 	void update_progress_bar();
 	void update_progress_bar_complete();
 	void update_display_as_notification();
-	bool check_for_redraw();
-	int check_for_special_blending_period();
+
+	bool checkForRedraw();
+	int getSpecialBlendingPeriod();
 
 	int _nLastTimePrintUpdate = 0;
-	void print_current_time();
+	void printCurrentTime();
 };
 
 #endif
