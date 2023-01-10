@@ -12,9 +12,9 @@
 #include "SPIFFS.h"
 #include <ezTime.h>
 
-DisplayDriver::DisplayDriver() : avg_compution_time(100)
+DisplayDriver::DisplayDriver() : _avgComputionTime(100)
 {
-	last_update = millis();
+	_nLastClockUpdate = millis();
 	// _nDisplayEffect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
 	for (int i = 0; i < 4; ++i)
 	{
@@ -76,8 +76,9 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 void DisplayDriver::update()
 {
 	events(); // give the ezTime-lib it's processing cycle.....
+
 	unsigned long now = millis();
-	if (now - last_update >= DISPLAY_REFRESH_INTERVAL)
+	if (now - _nLastClockUpdate >= DISPLAY_REFRESH_INTERVAL)
 	{
 		unsigned long t_1 = millis();
 		switch (mOperation_mode)
@@ -102,7 +103,7 @@ void DisplayDriver::update()
 			break;
 		}
 
-		last_update = now;
+		_nLastClockUpdate = now;
 		if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL)
 		{
 			for (int i = 0; i < 4; i++)
@@ -112,18 +113,17 @@ void DisplayDriver::update()
 		}
 
 		FastLED.show();
+
 		unsigned long t_2 = millis();
-		avg_compution_time.addValue(t_2 - t_1);
-		compution_time_update_count++;
+		_avgComputionTime.addValue(t_2 - t_1);
+		_nComputionTimeUpdateCount++;
 	}
 
-	if (compution_time_update_count >= DISPLAY_FREQUENCY)
+	if (_nComputionTimeUpdateCount >= DISPLAY_FREQUENCY)
 	{
-		compution_time_update_count = 0;
-		if (DEBUG_COMPUTION_TIME)
-		{
-			Serial.print("DEBUG    ø Compution Time: ");
-			Serial.println(avg_compution_time.getAverage());
+		_nComputionTimeUpdateCount = 0;
+		if (DEBUG_COMPUTION_TIME) {
+			siebenuhr::Controller::getInstance()->debugMessage(formatString("DEBUG ø Compution Time: %f", _avgComputionTime.getAverage()));
 		}
 	}
 }

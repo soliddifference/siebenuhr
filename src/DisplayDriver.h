@@ -115,7 +115,6 @@ private:
 	uint8_t _nDisplayEffect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
 	unsigned int mOperation_mode_before_notification = 0; // which ops mode was displayed before we displayed a notification? (in order to switch back after it)
 	uint32_t mDisplay_notification_until = 0;							// how many ms should a notification be displayed
-	unsigned long last_update;
 
 	char mCurrent_message[4];
 	char mMessage_prior_to_notification[4];
@@ -123,9 +122,10 @@ private:
 
 	bool _bRedrawScheduled = false;						// set to true, if the clock requires a redraw
 	int _nNextRedrawBlendingPeriod = BLENDIG_PERIOD; 	// for the next redraw, use this blending period
+
 	// analyse the current compution time for the update cycle (for debugging)
-	RunningAverage avg_compution_time;
-	int compution_time_update_count = 0;
+	RunningAverage _avgComputionTime;
+	int _nComputionTimeUpdateCount = 0;
 
 	// update the display for the different clock-modes
 	void update_clock();
