@@ -15,7 +15,7 @@
 DisplayDriver::DisplayDriver() : avg_compution_time(100)
 {
 	last_update = millis();
-	// mDisplay_effect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
+	// _nDisplayEffect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
 	for (int i = 0; i < 4; ++i)
 	{
 		glyphs[i] = new Glyph(LEDS_PER_SEGMENT);
@@ -24,7 +24,7 @@ DisplayDriver::DisplayDriver() : avg_compution_time(100)
 
 void DisplayDriver::setup(bool isFirstTimeSetup)
 {
-	setPower(0);
+	setPower(false);
 
 	siebenuhr::Controller *_inst = siebenuhr::Controller::getInstance(); // just for convinience
 
@@ -58,13 +58,13 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 
 	_solidColor_previous = _solidColor;
 	setColor(_solidColor);
-	_brightness = _inst->readFromEEPROM(EEPROM_ADDRESS_BRIGHTNESS);
-	setBrightness(_brightness);
+	_nBrightness = _inst->readFromEEPROM(EEPROM_ADDRESS_BRIGHTNESS); // todo: what happens here with an initial launch?
+	setBrightness(_nBrightness);
 	setTimezoneHour(_inst->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR));
-	mColor_wheel_angle = _inst->readFromEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE);
-	mDisplay_effect = _inst->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
+	_nColorWheelAngle = _inst->readFromEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE);
+	_nDisplayEffect = _inst->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
 
-	setPower(1);
+	setPower(true);
 }
 
 /*
@@ -147,9 +147,9 @@ void DisplayDriver::update_display_as_notification()
 
 void DisplayDriver::update_clock()
 {
-	if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != mLast_clock_update || checkForRedraw()))
+	if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != _nLastClockUpdate || checkForRedraw()))
 	{
-		mLast_clock_update = minute();
+		_nLastClockUpdate = minute();
 		char message[4]{0, 0, 0, 0};
 		message[0] = (int)floor(hour() / 10) + '0';
 		message[1] = hour() % 10 + '0';
@@ -159,9 +159,9 @@ void DisplayDriver::update_clock()
 		printCurrentTime();
 		scheduleRedraw();
 	}
-	else if (get_operations_mode() == OPERATION_MODE_CLOCK_MINUTES && (second() != mLast_clock_update || checkForRedraw()))
+	else if (get_operations_mode() == OPERATION_MODE_CLOCK_MINUTES && (second() != _nLastClockUpdate || checkForRedraw()))
 	{
-		mLast_clock_update = second();
+		_nLastClockUpdate = second();
 		char message[4]{0, 0, 0, 0};
 		message[0] = (int)floor(minute() / 10) + '0';
 		message[1] = minute() % 10 + '0';
@@ -171,9 +171,9 @@ void DisplayDriver::update_clock()
 		printCurrentTime();
 		scheduleRedraw();
 	}
-	else if (get_operations_mode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != mLast_clock_update || checkForRedraw()))
+	else if (get_operations_mode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != _nLastClockUpdate || checkForRedraw()))
 	{
-		mLast_clock_update = second();
+		_nLastClockUpdate = second();
 		char message[4]{0, 0, 0, 0};
 		message[0] = (int)floor(mPhotoshooting_hour / 10) + '0';
 		message[1] = mPhotoshooting_hour % 10 + '0';
@@ -186,11 +186,11 @@ void DisplayDriver::update_clock()
 
 	// effect section, now we find out HOW to display the content on the display
 	if (checkForRedraw()) {
-		switch (mDisplay_effect) {
+		switch (_nDisplayEffect) {
 			case DISPLAY_EFFECT_DAYLIGHT_WHEEL:
 			{
 				int sec_of_day = hour() * 3600 + minute() * 60;
-				int color_wheel_angle = get_color_wheel_angle();
+				int color_wheel_angle = getColorWheelAngle();
 				int hue_next = (int)((((float)sec_of_day / (float)86400) * 255) + color_wheel_angle) % 255;
 				int saturation = 255;
 				int value = 220;
@@ -368,25 +368,20 @@ CHSV DisplayDriver::getColor()
 
 uint8_t DisplayDriver::getPower()
 {
-	return _power;
+	return _bPower;
 }
 
-void DisplayDriver::setPower(uint8_t value)
+void DisplayDriver::setPower(bool power)
 {
-	if (_power != value)
-	{
-		_power = value;
-		if (value == 1)
-		{
+	if (_bPower != power) {
+		_bPower = power;
+		if (_bPower) {
 			_solidColor = _solidColor_previous;
 			setColor(_solidColor);
-			_powerIsDown = false;
 		}
-		else
-		{
+		else {
 			_solidColor_previous = _solidColor;
 			setColor(CHSV(0, 0, 0));
-			_powerIsDown = true;
 		}
 	}
 }
@@ -398,44 +393,46 @@ void DisplayDriver::set_display_effect(uint8_t value)
 		value = 0;
 	else if (value >= _display_effects_count)
 		value = _display_effects_count - 1;
-	mDisplay_effect = value;
-	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
+	_nDisplayEffect = value;
+	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, _nDisplayEffect, 30000);
 }
 
 uint8_t DisplayDriver::get_display_effect()
 {
-	return mDisplay_effect;
+	return _nDisplayEffect;
 }
 
 String DisplayDriver::get_display_effect_json()
 {
 	String json = "{";
-	json += "\"index\":" + String(mDisplay_effect);
-	json += ",\"name\":\"" + String(_display_effects[mDisplay_effect]) + "\"";
+	json += "\"index\":" + String(_nDisplayEffect);
+	json += ",\"name\":\"" + String(_display_effects[_nDisplayEffect]) + "\"";
 	json += "}";
 	return json;
 }
 
 const char *DisplayDriver::get_display_effect_short()
 {
-	return _display_effects_short[mDisplay_effect];
+	return _display_effects_short[_nDisplayEffect];
 }
 
 // increase or decrease the current display_effect number, and wrap around at the ends
 void DisplayDriver::adjust_and_save_new_display_effect(bool up)
 {
 	if (up)
-		mDisplay_effect++;
+		_nDisplayEffect++;
 	else
-		mDisplay_effect--;
+		_nDisplayEffect--;
+
 	// wrap around at the ends
-	if (mDisplay_effect < 0)
-		mDisplay_effect = 0;
-	else if (mDisplay_effect >= _display_effects_count)
-		mDisplay_effect = _display_effects_count - 1;
+	if (_nDisplayEffect < 0)
+		_nDisplayEffect = 0;
+	else if (_nDisplayEffect >= _display_effects_count)
+		_nDisplayEffect = _display_effects_count - 1;
+
 	Serial.print("current display effect: ");
-	Serial.println(mDisplay_effect);
-	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, mDisplay_effect, 30000);
+	Serial.println(_nDisplayEffect);
+	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, _nDisplayEffect, 30000);
 }
 
 void DisplayDriver::set_operations_mode(uint8_t mode)
@@ -458,7 +455,7 @@ Geters and setters for the brightness
 
 uint8_t DisplayDriver::getBrightness()
 {
-	return _brightness;
+	return _nBrightness;
 }
 
 void DisplayDriver::setBrightness(uint8_t value, bool saveToEEPROM)
@@ -473,8 +470,8 @@ void DisplayDriver::setBrightness(uint8_t value, bool saveToEEPROM)
 		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_BRIGHTNESS, value);
 	}
 
-	_brightness = value;
-	FastLED.setBrightness(_brightness);
+	_nBrightness = value;
+	FastLED.setBrightness(_nBrightness);
 }
 
 /*
@@ -485,9 +482,9 @@ uint8_t DisplayDriver::getBrightnessIndex()
 {
 	int minDelta = 255;
 	int minDeltaIndex = 0;
-	for (int i = 0; i < _brightnessIndexCount; i++)
+	for (int i = 0; i < _nBrightnessIndexCount; i++)
 	{
-		int delta = abs(_brightness - _brightnessMap[i]);
+		int delta = abs(_nBrightness - _nBrightnessMap[i]);
 		if (delta <= minDelta)
 		{
 			minDelta = delta;
@@ -499,15 +496,13 @@ uint8_t DisplayDriver::getBrightnessIndex()
 
 void DisplayDriver::setBrightnessIndex(int value, bool saveToEEPROM)
 {
-	if (value > _brightnessIndexCount - 1)
-	{
-		value = _brightnessIndexCount - 1;
+	if (value > _nBrightnessIndexCount - 1) {
+		value = _nBrightnessIndexCount - 1;
 	}
-	else if (value < 0)
-	{
+	else if (value < 0) {
 		value = 0;
 	}
-	setBrightness(_brightnessMap[value], saveToEEPROM);
+	setBrightness(_nBrightnessMap[value], saveToEEPROM);
 }
 
 /*
@@ -516,61 +511,47 @@ Geters and setters for the timezone hour delta
 
 uint8_t DisplayDriver::getTimezoneHour()
 {
-	return mTimezone;
+	return _nTimezone;
 }
 
 void DisplayDriver::setTimezoneHour(int value, bool saveToEEPROM)
 {
-	mTimezone = value;
-	// FIXME EZTIME timezone can no longer be set
-	// Timezone myTZ;
-	// myTZ.setLocation(F("Europe/Zurich"));
-	// Serial.println(myTZ.dateTime());
-	// m_pNTP->setTimeZone(mTimezone, 0);
-	// set_brightness(_brightnessMap[value]);
+	_nTimezone = value;
 
 	if (saveToEEPROM) {
 		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, value);
 	}
 }
 
-/**************************************************************************/
-/*
-		set the timezone for ezTime as default
- */
-/**************************************************************************/
-
-void DisplayDriver::set_new_default_timezone(String inTimezone)
+void DisplayDriver::setNewDefaultTimezone(String inTimezone)
 {
 	_ezTimeTimezone.setLocation(inTimezone);
 	_ezTimeTimezone.setDefault();
 }
 
-uint8_t DisplayDriver::get_color_wheel_angle()
+uint8_t DisplayDriver::getColorWheelAngle()
 {
-	return mColor_wheel_angle;
+	return _nColorWheelAngle;
 }
 
-void DisplayDriver::set_color_wheel_angle(uint8_t value)
+void DisplayDriver::setColorWheelAngle(uint8_t value, bool saveToEEPROM)
 {
-	// don't wrap around at the ends
+	/* the color wheel changes the color of the clock one around the color
+	wheel once in 24 hours. This angle define, at what time it should be
+	which color. Factory preset is midnight = blue = 171 */
+
 	if (value > 255)
 		value = 255;
 	else if (value < 0)
 		value = 0;
-	mColor_wheel_angle = value;
-	// update_clock(true);
+
+	_nColorWheelAngle = value;
+
+	if (saveToEEPROM) {
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, _nColorWheelAngle);
+	}
+
 	scheduleRedraw();
-}
-
-void DisplayDriver::save_new_color_wheel_angle(uint8_t value)
-{
-	if (value > 255)
-		value = 255;
-	else if (value < 0)
-		value = 0;
-	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, value);
-	set_color_wheel_angle(value);
 }
 
 /**************************************************************************/
@@ -646,12 +627,12 @@ String DisplayDriver::getStatus()
 {
 	String json = "{";
 
-	json += "\"power\":" + String(_power) + ",";
-	json += "\"brightness\":" + String(_brightness) + ",";
+	json += "\"power\":" + String(_bPower) + ",";
+	json += "\"brightness\":" + String(_nBrightness) + ",";
 
 	json += "\"current_display_effect\":{";
-	json += "\"index\":" + String(mDisplay_effect);
-	json += ",\"name\":\"" + String(_display_effects[mDisplay_effect]) + "\"}";
+	json += "\"index\":" + String(_nDisplayEffect);
+	json += ",\"name\":\"" + String(_display_effects[_nDisplayEffect]) + "\"}";
 
 	// FIXME totally broken since move to HSV color.
 	json += ",\"solidColor\":{";

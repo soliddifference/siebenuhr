@@ -104,7 +104,7 @@ void _setup() {
     }
     waitForSync();
 
-    Display.set_new_default_timezone(_cTimezone);
+    Display.setNewDefaultTimezone(_cTimezone);
     Display.disableNotification();
     Display.set_operations_mode(OPERATION_MODE_CLOCK_HOURS);
 

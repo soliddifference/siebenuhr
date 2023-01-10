@@ -32,8 +32,9 @@ public:
 	struct CHSV getColor();
 
 	String getStatus();
+	
 	uint8_t getPower();
-	void setPower(uint8_t power);
+	void setPower(bool power);
 
 	struct CRGB convertHexToRGB(String hex);
 	String convertRGBToHex(struct CRGB rgbColor);
@@ -57,20 +58,13 @@ public:
 	uint8_t getBrightnessIndex();
 	void setBrightnessIndex(int value, bool saveToEEPROM = true);
 
-	// uint8_t getSaturation();
-	// void setSaturation(int value, bool saveToEEPROM = true);
-
-	/* the color wheel changes the color of the clock one around the color
-		 wheel once in 24 hours. This angle define, at what time it should be
-		 which color. Factory preset is midnight = blue = 171 */
-	uint8_t get_color_wheel_angle();
-	void set_color_wheel_angle(uint8_t value);
-	void save_new_color_wheel_angle(uint8_t value);
+	uint8_t getColorWheelAngle();
+	void setColorWheelAngle(uint8_t value, bool saveToEEPROM = true);
 
 	uint8_t getTimezoneHour();
 	void setTimezoneHour(int value, bool saveToEEPROM = true);
 
-	void set_new_default_timezone(String inTimezone);
+	void setNewDefaultTimezone(String inTimezone);
 
 	void set_operations_mode(uint8_t mode);
 	uint8_t get_operations_mode();
@@ -87,18 +81,17 @@ private:
 	CRGB *_all_leds;
 	
 	bool _bNotificationSet = false;
-	uint8_t mLast_clock_update;		 // when was the clock updated the last time
-	uint8_t _power;
-	static const uint8_t _brightnessIndexCount = 43;
-	uint8_t _brightnessMap[_brightnessIndexCount] = {5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 21, 24, 27, 30, 34, 38, 42, 46, 51, 56, 61, 66, 72, 78, 84, 92, 99, 106, 113, 120, 128, 136, 144, 153, 162, 171, 181, 191, 201, 212, 223, 235, 255};
-	int _brightnessIndex;
-	uint8_t _brightness = _brightnessMap[_brightnessIndex];
-	uint8_t mColor_wheel_angle = 0; // Index number of which color angle is current
-	int8_t mTimezone = 1;						// is a notification currently set?
+	uint8_t _nLastClockUpdate;		 // when was the clock updated the last time
 
-	// char* _display_effects[11] = {
-	// "Solid Color", "Color Waves", "Rainbow",  "Rainbow With Glitter", "Confetti", "Sinelon", "Juggle", "Pride", "Color BPM", "Palette Test", "Fire"
-	// };
+	uint8_t _bPower;
+
+	static const uint8_t _nBrightnessIndexCount = 43;
+	uint8_t _nBrightnessMap[_nBrightnessIndexCount] = {5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 21, 24, 27, 30, 34, 38, 42, 46, 51, 56, 61, 66, 72, 78, 84, 92, 99, 106, 113, 120, 128, 136, 144, 153, 162, 171, 181, 191, 201, 212, 223, 235, 255};
+	int _nBrightnessIndex = 0;
+	uint8_t _nBrightness = _nBrightnessMap[_nBrightnessIndex];
+	uint8_t _nColorWheelAngle = 0; // Index number of which color angle is current
+	int8_t _nTimezone = 1;						// is a notification currently set?
+
 	const char *_display_effects[3] = {
 			"Color Wheel", "Solid Color", "Random Color"};
 	const char *_display_effects_short[3] = {
@@ -117,10 +110,9 @@ private:
 	int _pChangeSpeed = 3000;
 	unsigned long _pChangeSpeedPrev = 0; // will store last time LED was updated
 	int _pBlendingSpeed = 10000;
-	bool _powerIsDown = false;
 	unsigned int _autoPlayTimeout = 0;
 	unsigned int mOperation_mode = OPERATION_MODE_CLOCK_HOURS;
-	uint8_t mDisplay_effect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
+	uint8_t _nDisplayEffect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
 	unsigned int mOperation_mode_before_notification = 0; // which ops mode was displayed before we displayed a notification? (in order to switch back after it)
 	uint32_t mDisplay_notification_until = 0;							// how many ms should a notification be displayed
 	unsigned long last_update;

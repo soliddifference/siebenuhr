@@ -282,9 +282,9 @@ void Controller::handleUIKnob() {
 			uint8_t current_display_effect = _pDisplay->get_display_effect();
 			switch(current_display_effect) {
 				case DISPLAY_EFFECT_DAYLIGHT_WHEEL: {
-					uint8_t color_wheel_angle = _pDisplay->get_color_wheel_angle();
+					uint8_t color_wheel_angle = _pDisplay->getColorWheelAngle();
 					color_wheel_angle += encoderDelta*2;
-					_pDisplay->save_new_color_wheel_angle(color_wheel_angle);
+					_pDisplay->setColorWheelAngle(color_wheel_angle);
 					_pDisplay->scheduleRedraw(0);
 					break;
 				}
