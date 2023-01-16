@@ -18,13 +18,15 @@ enum CONTROLLER_STATE {
 };
 
 enum CONTROLLER_MENU {
+	CLOCK = 0,
 	BRIGHTNESS,
 	HUE,
 	SATURATION,
 	EFFECT,
 	TIMEZONE,
 	SET_HOUR,
-	SET_MINUTE
+	SET_MINUTE,
+	MENU_END
 };
 
 struct ControllerMenu_t {
@@ -35,7 +37,7 @@ struct ControllerMenu_t {
 
 class Controller {
 public:
-	static const int _nMenuMaxEntries = 7;
+	static const int _nMenuMaxEntries = CONTROLLER_MENU::MENU_END;
 	static const ControllerMenu_t _sMenu[_nMenuMaxEntries];
 
 	static Controller* getInstance();
@@ -106,8 +108,8 @@ private:
 	AsyncWiFiManager* _pWiFiManager;
 
 	// MENU
-	int _nMenuCurPos;
-	int _nMenuMaxPos;
+	uint8_t _nMenuCurPos;
+	uint32_t _nMenuLastPosChange;
 
 	String _cMessage;
 	static Controller* _pInstance;

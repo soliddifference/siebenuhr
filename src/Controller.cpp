@@ -14,6 +14,7 @@ UIButton* Controller::_pResetButton = nullptr;
 UIKnob* Controller::_pKnob = nullptr;
 
 const ControllerMenu_t Controller::_sMenu[Controller::_nMenuMaxEntries] = {
+		{CONTROLLER_MENU::CLOCK, "Display Clock", "CLCK"},
 		{CONTROLLER_MENU::BRIGHTNESS, "Brightness", "Brit"},
 		{CONTROLLER_MENU::HUE, "Hue", "COLO"},
 		{CONTROLLER_MENU::SATURATION, "Saturation", "SAtU"},
@@ -43,8 +44,8 @@ Controller::Controller() {
 	_pDisplay = nullptr;
 	_pWiFiManager = nullptr;
 
-	_nMenuCurPos = 0;
-	_nMenuMaxPos = 10;
+	_nMenuCurPos = CONTROLLER_MENU::CLOCK;
+	_nMenuLastPosChange = millis();
 
 	_bFirstTimeSetup = false;
 	_nSerialNumber = 0;
@@ -272,10 +273,28 @@ void Controller::handleUIResetButton() {
 
 void Controller::handleUIKnob() {
 	if(_pKnob->isPressed()) {
-		_nMenuCurPos = (_nMenuCurPos+1) == _nMenuMaxEntries ? 0 : _nMenuCurPos+1;
+		if (_nMenuCurPos ==  CONTROLLER_MENU::CLOCK) {
+			_nMenuCurPos = CONTROLLER_MENU::HUE;
+		} else if (_nMenuCurPos ==  CONTROLLER_MENU::HUE) {
+			_nMenuCurPos = CONTROLLER_MENU::SATURATION;
+		} else if (_nMenuCurPos ==  CONTROLLER_MENU::SATURATION) {
+			_nMenuCurPos = CONTROLLER_MENU::CLOCK;
+		} else {
+			// fallback
+			_nMenuCurPos = CONTROLLER_MENU::CLOCK;
+		}
+		// _nMenuCurPos = (_nMenuCurPos+1) == _nMenuMaxEntries ? 0 : _nMenuCurPos+1;
 		debugMessage(formatString("MENU: %s", _sMenu[_nMenuCurPos].name.c_str()));
 		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 3000);
+		_nMenuLastPosChange = millis();
     }
+
+	// menu timeout, going back to clock display
+	if ((millis() - _nMenuLastPosChange) > 10000) {
+		_nMenuCurPos = CONTROLLER_MENU::CLOCK;
+		_nMenuLastPosChange = millis();
+		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 3000);
+	}
 
   	int8_t encoderDelta = _pKnob->encoderChanged();
   	if (encoderDelta == 0) return;
