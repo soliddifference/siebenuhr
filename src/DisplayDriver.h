@@ -77,13 +77,14 @@ public:
 
 private:
 	Timezone _ezTimeTimezone;
-	Glyph *glyphs[4];
-	CRGB *_all_leds;
+	Glyph *_glyphs[4];
+	CRGB *_leds;
 	
 	bool _bNotificationSet = false;
 	uint8_t _nLastClockUpdate;		 // when was the clock updated the last time
 
 	uint8_t _bPower;
+	struct CHSV _solidColorBeforeShutdown;
 
 	static const uint8_t _nBrightnessIndexCount = 43;
 	uint8_t _nBrightnessMap[_nBrightnessIndexCount] = {5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 21, 24, 27, 30, 34, 38, 42, 46, 51, 56, 61, 66, 72, 78, 84, 92, 99, 106, 113, 120, 128, 136, 144, 153, 162, 171, 181, 191, 201, 212, 223, 235, 255};
@@ -103,22 +104,21 @@ private:
 	uint8_t _operation_mode_count = 5;
 
 	struct CHSV _solidColor;
-	struct CHSV _solidColor_previous;
-	uint8_t _gHue = 0; // rotating "base color" used by many of the display effects
-	int _gHueSpeed = 20;
-	unsigned long _gHueSpeedPrev = 0; // will store last time LED was updated
-	int _pChangeSpeed = 3000;
-	unsigned long _pChangeSpeedPrev = 0; // will store last time LED was updated
-	int _pBlendingSpeed = 10000;
-	unsigned int _autoPlayTimeout = 0;
-	unsigned int mOperation_mode = OPERATION_MODE_CLOCK_HOURS;
+	uint8_t _nHue = 0; // rotating "base color" used by many of the display effects
+	uint16_t _nHueSpeed = 20;
+	uint16_t _nHueSpeedPrev = 0; // will store last time LED was updated
+	uint16_t _nChangeSpeed = 3000;
+	uint16_t _pChangeSpeedPrev = 0; // will store last time LED was updated
+	uint16_t _nBlendingSpeed = 10000;
+	uint16_t _autoPlayTimeout = 0;
+	uint8_t _nOperationMode = OPERATION_MODE_CLOCK_HOURS;
 	uint8_t _nDisplayEffect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
-	unsigned int mOperation_mode_before_notification = 0; // which ops mode was displayed before we displayed a notification? (in order to switch back after it)
-	uint32_t mDisplay_notification_until = 0;							// how many ms should a notification be displayed
+	char _currentMessage[GLYPH_COUNT];
 
-	char mCurrent_message[4];
-	char mMessage_prior_to_notification[4];
-	struct CHSV mSolid_color_prior_to_notification;
+	uint32_t _nDisplayNotificationUntil = 0;
+	uint16_t _nOperationModeBeforeNotification = 0;
+	char _messageBeforeNotification[GLYPH_COUNT];
+	struct CHSV _solidColorBeforeNotification;
 
 	bool _bRedrawScheduled = false;						// set to true, if the clock requires a redraw
 	int _nNextRedrawBlendingPeriod = BLENDIG_PERIOD; 	// for the next redraw, use this blending period

@@ -18,7 +18,7 @@ DisplayDriver::DisplayDriver() : _avgComputionTime(100)
 	// _nDisplayEffect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
 	for (int i = 0; i < 4; ++i)
 	{
-		glyphs[i] = new Glyph(LEDS_PER_SEGMENT);
+		_glyphs[i] = new Glyph(LEDS_PER_SEGMENT);
 	}
 }
 
@@ -31,17 +31,17 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_gCurrentPalette = CRGBPalette16(CRGB::Black);
 	for (int i = 0; i < 4; i++) {
 		if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_PARALELL) {
-			glyphs[i]->attach(i, i);
+			_glyphs[i]->attach(i, i);
 		}
 		else if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
-			glyphs[i]->attach(i);
+			_glyphs[i]->attach(i);
 		}
 	}
 
 	if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL)
 	{
-		_all_leds = new CRGB[SEGMENT_COUNT * LEDS_PER_SEGMENT * GLYPH_COUNT];
-		FastLED.addLeds<NEOPIXEL, DATA_PIN_0>(_all_leds, SEGMENT_COUNT * LEDS_PER_SEGMENT * GLYPH_COUNT);
+		_leds = new CRGB[SEGMENT_COUNT * LEDS_PER_SEGMENT * GLYPH_COUNT];
+		FastLED.addLeds<NEOPIXEL, DATA_PIN_0>(_leds, SEGMENT_COUNT * LEDS_PER_SEGMENT * GLYPH_COUNT);
 	}
 
 	_solidColor.h = _inst->readFromEEPROM(EEPROM_ADDRESS_H);
@@ -56,7 +56,7 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 		_solidColor = DEFAULT_COLOR;
 	}
 
-	_solidColor_previous = _solidColor;
+	_solidColorBeforeShutdown = _solidColor;
 	setColor(_solidColor);
 	_nBrightness = _inst->readFromEEPROM(EEPROM_ADDRESS_BRIGHTNESS); // todo: what happens here with an initial launch?
 	setBrightness(_nBrightness);
@@ -81,7 +81,7 @@ void DisplayDriver::update()
 	if (now - _nLastClockUpdate >= DISPLAY_REFRESH_INTERVAL)
 	{
 		unsigned long t_1 = millis();
-		switch (mOperation_mode)
+		switch (_nOperationMode)
 		{
 		case OPERATION_MODE_CLOCK_HOURS:
 			update_clock();
@@ -108,7 +108,7 @@ void DisplayDriver::update()
 		{
 			for (int i = 0; i < 4; i++)
 			{
-				memmove(&_all_leds[glyphs[i]->_glyph_offset], &glyphs[i]->_leds[0], LEDS_PER_SEGMENT * SEGMENT_COUNT * sizeof(CRGB));
+				memmove(&_leds[_glyphs[i]->_glyph_offset], &_glyphs[i]->_leds[0], LEDS_PER_SEGMENT * SEGMENT_COUNT * sizeof(CRGB));
 			}
 		}
 
@@ -131,12 +131,12 @@ void DisplayDriver::update()
 void DisplayDriver::update_display_as_notification()
 {
 	uint32_t now = millis();
-	if (now < mDisplay_notification_until || mDisplay_notification_until == 0)
+	if (now < _nDisplayNotificationUntil || _nDisplayNotificationUntil == 0)
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			glyphs[i]->update_blending_to_next_color();
-			glyphs[i]->update();
+			_glyphs[i]->update_blending_to_next_color();
+			_glyphs[i]->update();
 		}
 	}
 	else
@@ -213,10 +213,11 @@ void DisplayDriver::update_clock()
 			}
 		}
 	}
+
 	for (int i = 0; i < 4; i++)
 	{
-		glyphs[i]->update_blending_to_next_color();
-		glyphs[i]->update();
+		_glyphs[i]->update_blending_to_next_color();
+		_glyphs[i]->update();
 	}
 }
 
@@ -224,7 +225,7 @@ void DisplayDriver::update_progress_bar()
 {
 	for (int i = 0; i < 4; i++)
 	{
-		glyphs[i]->update_progress_bar();
+		_glyphs[i]->update_progress_bar();
 	}
 }
 
@@ -232,7 +233,7 @@ void DisplayDriver::update_progress_bar_complete()
 {
 	for (int i = 0; i < 4; i++)
 	{
-		glyphs[i]->update_progress_bar_complete();
+		_glyphs[i]->update_progress_bar_complete();
 	}
 }
 
@@ -248,8 +249,8 @@ void DisplayDriver::setMessage(char message[4], int fade_interval)
 {
 	for (int i = 0; i < 4; i++)
 	{
-		mCurrent_message[i] = message[i];
-		glyphs[i]->set_next_char(message[i], fade_interval);
+		_currentMessage[i] = message[i];
+		_glyphs[i]->set_next_char(message[i], fade_interval);
 	}
 }
 
@@ -257,7 +258,7 @@ void DisplayDriver::getMessage(char *current_message)
 {
 	for (int i = 0; i < 4; ++i)
 	{
-		current_message[i] = mCurrent_message[i];
+		current_message[i] = _currentMessage[i];
 	}
 }
 
@@ -286,23 +287,19 @@ void DisplayDriver::setNotification(const char* notificationString, uint32_t mil
 
 void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 {
-	if (mOperation_mode != OPERATION_MODE_MESSAGE)
-	{
-		mOperation_mode_before_notification = mOperation_mode;
-		// mMessage_prior_to_notification = mCurrent_message;
-		strncpy(mMessage_prior_to_notification, mCurrent_message, 4);
-		mSolid_color_prior_to_notification = _solidColor;
+	if (_nOperationMode != OPERATION_MODE_MESSAGE) {
+		_nOperationModeBeforeNotification = _nOperationMode;
+		strncpy(_messageBeforeNotification, _currentMessage, 4);
+		_solidColorBeforeNotification = _solidColor;
 	}
 
-	mOperation_mode = OPERATION_MODE_MESSAGE;
+	_nOperationMode = OPERATION_MODE_MESSAGE;
 	_bNotificationSet = true;
-	if (milliseconds > 0)
-	{
-		mDisplay_notification_until = millis() + milliseconds;
+	if (milliseconds > 0) {
+		_nDisplayNotificationUntil = millis() + milliseconds;
 	}
-	else
-	{
-		mDisplay_notification_until = 0;
+	else {
+		_nDisplayNotificationUntil = 0;
 	}
 
 	setColor(NOTIFICATION_COLOR);
@@ -313,13 +310,12 @@ void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 void DisplayDriver::disableNotification()
 {
 	// Manually disable the display of a notification (prior to its TTL).
-	mDisplay_notification_until = millis();
-	if (_bNotificationSet)
-	{
-		mOperation_mode = mOperation_mode_before_notification;
-		strncpy(mCurrent_message, mMessage_prior_to_notification, 4);
+	_nDisplayNotificationUntil = millis();
+	if (_bNotificationSet) {
+		_nOperationMode = _nOperationModeBeforeNotification;
+		strncpy(_currentMessage, _messageBeforeNotification, 4);
 		_bNotificationSet = false;
-		_solidColor = mSolid_color_prior_to_notification;
+		_solidColor = _solidColorBeforeNotification;
 	}
 
 	// force the clock to update on the next cycle
@@ -343,7 +339,7 @@ void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 {
 	_solidColor = color;
 	for (int i = 0; i < 4; i++) {
-		glyphs[i]->set_color(color);
+		_glyphs[i]->set_color(color);
 	}
 
 	if (saveToEEPROM) {
@@ -357,7 +353,7 @@ void DisplayDriver::setNextColor(CHSV color, int interval_ms)
 {
 	for (int i = 0; i < 4; i++)
 	{
-		glyphs[i]->set_next_color(color, interval_ms);
+		_glyphs[i]->set_next_color(color, interval_ms);
 	}
 }
 
@@ -376,11 +372,11 @@ void DisplayDriver::setPower(bool power)
 	if (_bPower != power) {
 		_bPower = power;
 		if (_bPower) {
-			_solidColor = _solidColor_previous;
+			_solidColor = _solidColorBeforeShutdown;
 			setColor(_solidColor);
 		}
 		else {
-			_solidColor_previous = _solidColor;
+			_solidColorBeforeShutdown = _solidColor;
 			setColor(CHSV(0, 0, 0));
 		}
 	}
@@ -437,16 +433,15 @@ void DisplayDriver::adjust_and_save_new_display_effect(bool up)
 
 void DisplayDriver::set_operations_mode(uint8_t mode)
 {
-	mOperation_mode = mode;
-	if (mode == OPERATION_MODE_PHOTO_SHOOTING)
-	{
+	_nOperationMode = mode;
+	if (mode == OPERATION_MODE_PHOTO_SHOOTING) {
 		set_display_effect(DISPLAY_EFFECT_SOLID_COLOR);
 	}
 }
 
 uint8_t DisplayDriver::get_operations_mode()
 {
-	return mOperation_mode;
+	return _nOperationMode;
 }
 
 /*
@@ -641,9 +636,9 @@ String DisplayDriver::getStatus()
 	json += ",\"b\":" + String(_solidColor.v);
 	json += "}";
 
-	json += ",\"hueSpeed\":" + String(_gHueSpeed);
-	json += ",\"paletteSpeed\":" + String(round(_pChangeSpeed));
-	json += ",\"blendingSpeed\":" + String(_pBlendingSpeed);
+	json += ",\"hueSpeed\":" + String(_nHueSpeed);
+	json += ",\"paletteSpeed\":" + String(round(_nChangeSpeed));
+	json += ",\"blendingSpeed\":" + String(_nBlendingSpeed);
 
 	json += ",\"display_effects\":[";
 	for (uint8_t i = 0; i < _display_effects_count; i++)
