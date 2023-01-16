@@ -25,7 +25,7 @@ public:
 	int isNotificationSet();
 	void disableNotification();
 
-	void update();
+	void update(bool wifiConnected, bool NTPEnabled);
 
 	void setColor(const struct CHSV &color, bool saveToEEPROM = false);
 	void setNextColor(CHSV color, int interval_ms);
@@ -128,7 +128,7 @@ private:
 	int _nComputionTimeUpdateCount = 0;
 
 	// update the display for the different clock-modes
-	void update_clock();
+	void updateClock();
 	void update_progress_bar();
 	void update_progress_bar_complete();
 	void update_display_as_notification();

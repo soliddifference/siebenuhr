@@ -39,7 +39,7 @@ void setup() {
     _cntrl->setResetButton(RESET_BUTTON);
     _cntrl->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
 
-    if (!_cntrl->initializeWifi(true, &wifiManager) || !_cntrl->initializeNTP(true) || !_cntrl->initializeDisplay(&Display)) {
+    if (!_cntrl->initializeWifi(false, &wifiManager) || !_cntrl->initializeNTP(true) || !_cntrl->initializeDisplay(&Display)) {
         _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
         _cntrl->debugMessage("7Uhr controller setup failed.");
         return;
@@ -93,8 +93,8 @@ void _setup() {
     MDNS.addService("http", "tcp", 80);
     mdns_instance_name_set(instanceName);
 
-    Display.setNotification("Sync");
-    Display.update();
+    // Display.setNotification("Sync");
+    // Display.update();
 
     setDebug(INFO);
     while(timeStatus()==timeNotSet) {

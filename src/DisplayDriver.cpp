@@ -73,14 +73,20 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 		Low level method that updates the display and actually does all the magic
 */
 /**************************************************************************/
-void DisplayDriver::update()
+void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 {
-	events(); // give the ezTime-lib it's processing cycle.....
+	// printCurrentTime();
+	if (wifiConnected) {
+		siebenuhr::Controller::getInstance()->debugMessage("Give the ezTime-lib it's processing cycle.......");
+		events(); // give the ezTime-lib it's processing cycle.....
+	}
 
 	unsigned long now = millis();
 	if (now - _nLastClockUpdate >= DISPLAY_REFRESH_INTERVAL)
 	{
 		unsigned long t_1 = millis();
+		updateClock();
+/*		
 		switch (_nOperationMode)
 		{
 		case OPERATION_MODE_CLOCK_HOURS:
@@ -102,20 +108,17 @@ void DisplayDriver::update()
 			update_clock();
 			break;
 		}
-
+*/
 		_nLastClockUpdate = now;
-		if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL)
-		{
-			for (int i = 0; i < 4; i++)
-			{
+		if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
+			for (int i = 0; i < 4; i++) {
 				memmove(&_leds[_glyphs[i]->_glyph_offset], &_glyphs[i]->_leds[0], LEDS_PER_SEGMENT * SEGMENT_COUNT * sizeof(CRGB));
 			}
 		}
 
 		FastLED.show();
 
-		unsigned long t_2 = millis();
-		_avgComputionTime.addValue(t_2 - t_1);
+		_avgComputionTime.addValue(millis() - t_1);
 		_nComputionTimeUpdateCount++;
 	}
 
@@ -123,7 +126,7 @@ void DisplayDriver::update()
 	{
 		_nComputionTimeUpdateCount = 0;
 		if (DEBUG_COMPUTION_TIME) {
-			siebenuhr::Controller::getInstance()->debugMessage(formatString("DEBUG ø Compution Time: %f", _avgComputionTime.getAverage()));
+			siebenuhr::Controller::getInstance()->debugMessage("DEBUG ø Compution Time: %f", _avgComputionTime.getAverage());
 		}
 	}
 }
@@ -145,7 +148,7 @@ void DisplayDriver::update_display_as_notification()
 	}
 }
 
-void DisplayDriver::update_clock()
+void DisplayDriver::updateClock()
 {
 	if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != _nLastClockUpdate || checkForRedraw()))
 	{

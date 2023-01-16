@@ -65,8 +65,9 @@ public:
 	void writeToEEPROM(const int EEPROM_address, uint8_t value, uint32_t delay=10000);
 
 	// debugging and logging
-	void debugMessage(const char *msg);
+	// void debugMessage(const char *msg);
 	void debugMessage(const String &s);
+	void debugMessage(const char *format, ...);
 	void debugValue(const char *key, const int value);
 
 private:

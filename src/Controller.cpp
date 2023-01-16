@@ -143,7 +143,7 @@ bool Controller::initializeDisplay(DisplayDriver* display) {
 	_pDisplay = display;
 
 	if (_pDisplay == nullptr) {
-		_strLastErrorDesc = "Failed to setup wifi component.";
+		_strLastErrorDesc = "Failed to setup display and glyphs.";
 		return false;
 	}
 
@@ -162,17 +162,24 @@ bool Controller::initializeDebug(bool enabled, int baud, int waitMilliseconds) {
 	return true;
 }
 
-void Controller::debugMessage(const char* message) {
-	if (_bDebugEnabled) {
-		Serial.println(message);
-	}
-}
-
 void Controller::debugMessage(const String &message) {
 	if (_bDebugEnabled) {
 		Serial.println(message.c_str());
 	}
 }
+
+void Controller::debugMessage(const char *format, ...) {
+	static char buffer[256];
+	va_list args;
+	va_start(args, format);
+	vsprintf(buffer, format, args);
+	va_end(args);
+
+	if (_bDebugEnabled) {
+		Serial.println(buffer);
+	}
+}
+
 
 void Controller::debugValue(const char *key, const int value) {
 	debugMessage(formatString("%s: %d", key, value));
@@ -205,6 +212,7 @@ void Controller::setResetButton(int buttonResetPin) {
 void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
 	_pKnob = new UIKnob(knobPinA, knobPinB, buttonPin);
 	_pKnob->registerCallbacks([]{_pKnob->callbackButton();}, []{_pKnob->callbackEncoder();});
+	debugMessage(formatString("Knob initialized: %d %d %d",  knobPinA, knobPinB, buttonPin));
 }
 
 bool Controller::update() {
@@ -222,7 +230,7 @@ bool Controller::update() {
 		handleUIKnob();
 	}
 
-	_pDisplay->update();
+	_pDisplay->update(_bWifiEnabled, _bNTPEnabled);
 
 	// save values to EEPROM (if scheduled)
 	if(_bDeferredSavingToEEPROMScheduled) {
@@ -233,6 +241,10 @@ bool Controller::update() {
 }
 
 void Controller::handleUIResetButton() {
+	if (_pResetButton->getState()) {
+		debugMessage(formatString("button: %d", _pResetButton->getState() ? 1 : 0));
+	}
+
 	if (_pResetButton->getState()) {
 	    int countdown_int = (5 - (int)(_pResetButton->getTimeSinceStateChange()/1000.f));
 	    if (countdown_int >= 0) {
