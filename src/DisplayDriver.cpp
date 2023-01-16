@@ -47,12 +47,9 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_solidColor.h = _inst->readFromEEPROM(EEPROM_ADDRESS_H);
 	_solidColor.s = _inst->readFromEEPROM(EEPROM_ADDRESS_S);
 	_solidColor.v = _inst->readFromEEPROM(EEPROM_ADDRESS_V);
-
-	_inst->debugValue("Bootup HUE", _solidColor.h);
 	
 	// FIXME next if can be deleted, once the initatilizations upstairs works
-	if (_solidColor.h == 0 && _solidColor.s == 0 && _solidColor.v == 0)
-	{
+	if (_solidColor.h == 0 && _solidColor.s == 0 && _solidColor.v == 0) {
 		_solidColor = DEFAULT_COLOR;
 	}
 
@@ -64,52 +61,41 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_nColorWheelAngle = _inst->readFromEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE);
 	_nDisplayEffect = _inst->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
 
+	_inst->debugMessage("Config loaded! Color=%d Brightness=%d", _solidColor.hue, _nBrightness);
+	_inst->debugMessage("Display:Setup..");
+
 	setPower(true);
 }
 
-/*
-		update
-
-		Low level method that updates the display and actually does all the magic
-*/
-/**************************************************************************/
 void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 {
-	// printCurrentTime();
 	if (wifiConnected) {
 		siebenuhr::Controller::getInstance()->debugMessage("Give the ezTime-lib it's processing cycle.......");
 		events(); // give the ezTime-lib it's processing cycle.....
 	}
 
 	unsigned long now = millis();
-	if (now - _nLastClockUpdate >= DISPLAY_REFRESH_INTERVAL)
-	{
+	if ((now - _nLastClockUpdate) >= DISPLAY_REFRESH_INTERVAL) {
 		unsigned long t_1 = millis();
-		updateClock();
-/*		
+
 		switch (_nOperationMode)
 		{
 		case OPERATION_MODE_CLOCK_HOURS:
-			update_clock();
+			updateClock();
 			break;
 		case OPERATION_MODE_CLOCK_MINUTES:
-			update_clock();
+			updateClock();
 			break;
 		case OPERATION_MODE_MESSAGE:
-			update_display_as_notification();
-			break;
-		case OPERATION_MODE_PROGRESS_BAR_BOTTOM:
-			update_progress_bar();
-			break;
-		case OPERATION_MODE_PROGRESS_BAR_COMPLETE:
-			update_progress_bar_complete();
-			break;
-		case OPERATION_MODE_PHOTO_SHOOTING:
-			update_clock();
+			updateDisplayAsNotification();
 			break;
 		}
-*/
 		_nLastClockUpdate = now;
+
+		for(int i=0; i<4; i++) {
+			_glyphs[i]->update_blending_to_next_color();
+			_glyphs[i]->update();
+		}
 		if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
 			for (int i = 0; i < 4; i++) {
 				memmove(&_leds[_glyphs[i]->_glyph_offset], &_glyphs[i]->_leds[0], LEDS_PER_SEGMENT * SEGMENT_COUNT * sizeof(CRGB));
@@ -131,26 +117,16 @@ void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 	}
 }
 
-void DisplayDriver::update_display_as_notification()
+void DisplayDriver::updateDisplayAsNotification()
 {
-	uint32_t now = millis();
-	if (now < _nDisplayNotificationUntil || _nDisplayNotificationUntil == 0)
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			_glyphs[i]->update_blending_to_next_color();
-			_glyphs[i]->update();
-		}
-	}
-	else
-	{
+	if (millis() > _nDisplayNotificationUntil && _nDisplayNotificationUntil != 0) {
 		disableNotification();
 	}
 }
 
 void DisplayDriver::updateClock()
 {
-	if (get_operations_mode() == OPERATION_MODE_CLOCK_HOURS && (minute() != _nLastClockUpdate || checkForRedraw()))
+	if (getOperationMode() == OPERATION_MODE_CLOCK_HOURS && (minute() != _nLastClockUpdate || checkForRedraw()))
 	{
 		_nLastClockUpdate = minute();
 		char message[4]{0, 0, 0, 0};
@@ -162,7 +138,7 @@ void DisplayDriver::updateClock()
 		printCurrentTime();
 		scheduleRedraw();
 	}
-	else if (get_operations_mode() == OPERATION_MODE_CLOCK_MINUTES && (second() != _nLastClockUpdate || checkForRedraw()))
+	else if (getOperationMode() == OPERATION_MODE_CLOCK_MINUTES && (second() != _nLastClockUpdate || checkForRedraw()))
 	{
 		_nLastClockUpdate = second();
 		char message[4]{0, 0, 0, 0};
@@ -174,7 +150,7 @@ void DisplayDriver::updateClock()
 		printCurrentTime();
 		scheduleRedraw();
 	}
-	else if (get_operations_mode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != _nLastClockUpdate || checkForRedraw()))
+	else if (getOperationMode() == OPERATION_MODE_PHOTO_SHOOTING && (second() != _nLastClockUpdate || checkForRedraw()))
 	{
 		_nLastClockUpdate = second();
 		char message[4]{0, 0, 0, 0};
@@ -215,12 +191,6 @@ void DisplayDriver::updateClock()
 				break;
 			}
 		}
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		_glyphs[i]->update_blending_to_next_color();
-		_glyphs[i]->update();
 	}
 }
 
@@ -293,6 +263,7 @@ void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 	if (_nOperationMode != OPERATION_MODE_MESSAGE) {
 		_nOperationModeBeforeNotification = _nOperationMode;
 		strncpy(_messageBeforeNotification, _currentMessage, 4);
+		// siebenuhr::Controller::getInstance()->debugMessage("new notification color: %d", _solidColor.hue);
 		_solidColorBeforeNotification = _solidColor;
 	}
 
@@ -305,7 +276,7 @@ void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 		_nDisplayNotificationUntil = 0;
 	}
 
-	setColor(NOTIFICATION_COLOR);
+	// setColor(NOTIFICATION_COLOR);
 	setNextColor(NOTIFICATION_COLOR, 1);
 	setMessage(notification, 0);
 }
@@ -314,11 +285,12 @@ void DisplayDriver::disableNotification()
 {
 	// Manually disable the display of a notification (prior to its TTL).
 	_nDisplayNotificationUntil = millis();
+
 	if (_bNotificationSet) {
 		_nOperationMode = _nOperationModeBeforeNotification;
 		strncpy(_currentMessage, _messageBeforeNotification, 4);
 		_bNotificationSet = false;
-		_solidColor = _solidColorBeforeNotification;
+		setColor(_solidColorBeforeNotification, false);
 	}
 
 	// force the clock to update on the next cycle
@@ -343,6 +315,7 @@ void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 	_solidColor = color;
 	for (int i = 0; i < 4; i++) {
 		_glyphs[i]->set_color(color);
+		_glyphs[i]->set_next_color(color, 0);
 	}
 
 	if (saveToEEPROM) {
@@ -354,8 +327,7 @@ void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 
 void DisplayDriver::setNextColor(CHSV color, int interval_ms)
 {
-	for (int i = 0; i < 4; i++)
-	{
+	for (int i = 0; i < 4; i++) {
 		_glyphs[i]->set_next_color(color, interval_ms);
 	}
 }
@@ -372,16 +344,14 @@ uint8_t DisplayDriver::getPower()
 
 void DisplayDriver::setPower(bool power)
 {
-	if (_bPower != power) {
-		_bPower = power;
-		if (_bPower) {
-			_solidColor = _solidColorBeforeShutdown;
-			setColor(_solidColor);
-		}
-		else {
-			_solidColorBeforeShutdown = _solidColor;
-			setColor(CHSV(0, 0, 0));
-		}
+	_bPower = power;
+	if (_bPower) {
+		_solidColor = _solidColorBeforeShutdown;
+		setColor(_solidColor);
+	}
+	else {
+		_solidColorBeforeShutdown = _solidColor;
+		setColor(CHSV(0, 0, 0));
 	}
 }
 
@@ -434,7 +404,7 @@ void DisplayDriver::adjust_and_save_new_display_effect(bool up)
 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, _nDisplayEffect, 30000);
 }
 
-void DisplayDriver::set_operations_mode(uint8_t mode)
+void DisplayDriver::setOperationMode(uint8_t mode)
 {
 	_nOperationMode = mode;
 	if (mode == OPERATION_MODE_PHOTO_SHOOTING) {
@@ -442,7 +412,7 @@ void DisplayDriver::set_operations_mode(uint8_t mode)
 	}
 }
 
-uint8_t DisplayDriver::get_operations_mode()
+uint8_t DisplayDriver::getOperationMode()
 {
 	return _nOperationMode;
 }
@@ -451,12 +421,12 @@ uint8_t DisplayDriver::get_operations_mode()
 Geters and setters for the brightness
 */
 
-uint8_t DisplayDriver::getBrightness()
+int DisplayDriver::getBrightness()
 {
 	return _nBrightness;
 }
 
-void DisplayDriver::setBrightness(uint8_t value, bool saveToEEPROM)
+void DisplayDriver::setBrightness(int value, bool saveToEEPROM)
 {
 	if (value > 255)
 		value = 255;
@@ -470,37 +440,6 @@ void DisplayDriver::setBrightness(uint8_t value, bool saveToEEPROM)
 
 	_nBrightness = value;
 	FastLED.setBrightness(_nBrightness);
-}
-
-/*
-Geters and setters for the brightness, based on brightness map
-*/
-
-uint8_t DisplayDriver::getBrightnessIndex()
-{
-	int minDelta = 255;
-	int minDeltaIndex = 0;
-	for (int i = 0; i < _nBrightnessIndexCount; i++)
-	{
-		int delta = abs(_nBrightness - _nBrightnessMap[i]);
-		if (delta <= minDelta)
-		{
-			minDelta = delta;
-			minDeltaIndex = i;
-		}
-	}
-	return minDeltaIndex;
-}
-
-void DisplayDriver::setBrightnessIndex(int value, bool saveToEEPROM)
-{
-	if (value > _nBrightnessIndexCount - 1) {
-		value = _nBrightnessIndexCount - 1;
-	}
-	else if (value < 0) {
-		value = 0;
-	}
-	setBrightness(_nBrightnessMap[value], saveToEEPROM);
 }
 
 /*

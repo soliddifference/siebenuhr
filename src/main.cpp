@@ -106,7 +106,7 @@ void _setup() {
 
     Display.setNewDefaultTimezone(_cTimezone);
     Display.disableNotification();
-    Display.set_operations_mode(OPERATION_MODE_CLOCK_HOURS);
+    Display.setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 
     _inst->debugMessage("7Uhr controller setup complete.");
 }

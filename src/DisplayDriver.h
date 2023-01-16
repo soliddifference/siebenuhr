@@ -18,7 +18,11 @@ public:
 
 	void setMessage(char message[4], int fade_interval = BLENDIG_PERIOD);
 	void getMessage(char *current_message);
-	
+
+	void setColor(const struct CHSV &color, bool saveToEEPROM = false);
+	void setNextColor(CHSV color, int interval_ms);
+	struct CHSV getColor();
+
 	void setNotification(String notification, uint32_t milliseconds = 0);
 	void setNotification(const char* notification, uint32_t milliseconds = 0);
 	void setNotification(char notification[4], uint32_t milliseconds = 0);
@@ -26,10 +30,6 @@ public:
 	void disableNotification();
 
 	void update(bool wifiConnected, bool NTPEnabled);
-
-	void setColor(const struct CHSV &color, bool saveToEEPROM = false);
-	void setNextColor(CHSV color, int interval_ms);
-	struct CHSV getColor();
 
 	String getStatus();
 	
@@ -52,11 +52,8 @@ public:
 	uint8_t getCurrentPalette();
 	CRGBPalette16 _gCurrentPalette;
 
-	uint8_t getBrightness();
-	void setBrightness(uint8_t value, bool saveToEEPROM = true);
-
-	uint8_t getBrightnessIndex();
-	void setBrightnessIndex(int value, bool saveToEEPROM = true);
+	int getBrightness();
+	void setBrightness(int value, bool saveToEEPROM = true);
 
 	uint8_t getColorWheelAngle();
 	void setColorWheelAngle(uint8_t value, bool saveToEEPROM = true);
@@ -66,8 +63,8 @@ public:
 
 	void setNewDefaultTimezone(String inTimezone);
 
-	void set_operations_mode(uint8_t mode);
-	uint8_t get_operations_mode();
+	void setOperationMode(uint8_t mode);
+	uint8_t getOperationMode();
 
 	void scheduleRedraw();
 	void scheduleRedraw(int blending_period);
@@ -86,10 +83,7 @@ private:
 	uint8_t _bPower;
 	struct CHSV _solidColorBeforeShutdown;
 
-	static const uint8_t _nBrightnessIndexCount = 43;
-	uint8_t _nBrightnessMap[_nBrightnessIndexCount] = {5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 21, 24, 27, 30, 34, 38, 42, 46, 51, 56, 61, 66, 72, 78, 84, 92, 99, 106, 113, 120, 128, 136, 144, 153, 162, 171, 181, 191, 201, 212, 223, 235, 255};
-	int _nBrightnessIndex = 0;
-	uint8_t _nBrightness = _nBrightnessMap[_nBrightnessIndex];
+	uint8_t _nBrightness = 128;
 	uint8_t _nColorWheelAngle = 0; // Index number of which color angle is current
 	int8_t _nTimezone = 1;						// is a notification currently set?
 
@@ -129,9 +123,9 @@ private:
 
 	// update the display for the different clock-modes
 	void updateClock();
+	void updateDisplayAsNotification();
 	void update_progress_bar();
 	void update_progress_bar_complete();
-	void update_display_as_notification();
 
 	bool checkForRedraw();
 	int getSpecialBlendingPeriod();

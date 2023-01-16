@@ -16,7 +16,7 @@ UIKnob* Controller::_pKnob = nullptr;
 const ControllerMenu_t Controller::_sMenu[Controller::_nMenuMaxEntries] = {
 		{CONTROLLER_MENU::CLOCK, "Display Clock", "CLCK"},
 		{CONTROLLER_MENU::BRIGHTNESS, "Brightness", "Brit"},
-		{CONTROLLER_MENU::HUE, "Hue", "COLO"},
+		{CONTROLLER_MENU::HUE, "Hue", "COLr"},
 		{CONTROLLER_MENU::SATURATION, "Saturation", "SAtU"},
 		{CONTROLLER_MENU::EFFECT, "Effect", "EFCT"},
 		{CONTROLLER_MENU::TIMEZONE, "Timezone", "ZOnE"},
@@ -148,9 +148,13 @@ bool Controller::initializeDisplay(DisplayDriver* display) {
 		return false;
 	}
 
-	_pDisplay->setNotification(_cMessage);
+	// set welcome message
+	_pDisplay->setNotification(_cMessage, 3000);
 
 	_eState = CONTROLLER_STATE::initialized;
+
+	debugMessage("Controller::initializeDisplay");
+
 	return true;
 }
 
@@ -213,7 +217,6 @@ void Controller::setResetButton(int buttonResetPin) {
 void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
 	_pKnob = new UIKnob(knobPinA, knobPinB, buttonPin);
 	_pKnob->registerCallbacks([]{_pKnob->callbackButton();}, []{_pKnob->callbackEncoder();});
-	debugMessage(formatString("Knob initialized: %d %d %d",  knobPinA, knobPinB, buttonPin));
 }
 
 bool Controller::update() {
@@ -243,10 +246,6 @@ bool Controller::update() {
 
 void Controller::handleUIResetButton() {
 	if (_pResetButton->getState()) {
-		debugMessage(formatString("button: %d", _pResetButton->getState() ? 1 : 0));
-	}
-
-	if (_pResetButton->getState()) {
 	    int countdown_int = (5 - (int)(_pResetButton->getTimeSinceStateChange()/1000.f));
 	    if (countdown_int >= 0) {
 			_cMessage = formatString("rst%d", countdown_int);
@@ -266,151 +265,66 @@ void Controller::handleUIResetButton() {
 			ESP.restart();
 			delay(3000);
 	    }
-	} else {
-	    _pDisplay->disableNotification();
-	}
+	} 
 }
 
 void Controller::handleUIKnob() {
 	if(_pKnob->isPressed()) {
 		if (_nMenuCurPos ==  CONTROLLER_MENU::CLOCK) {
 			_nMenuCurPos = CONTROLLER_MENU::HUE;
-		} else if (_nMenuCurPos ==  CONTROLLER_MENU::HUE) {
-			_nMenuCurPos = CONTROLLER_MENU::SATURATION;
-		} else if (_nMenuCurPos ==  CONTROLLER_MENU::SATURATION) {
-			_nMenuCurPos = CONTROLLER_MENU::CLOCK;
 		} else {
-			// fallback
 			_nMenuCurPos = CONTROLLER_MENU::CLOCK;
 		}
-		// _nMenuCurPos = (_nMenuCurPos+1) == _nMenuMaxEntries ? 0 : _nMenuCurPos+1;
-		debugMessage(formatString("MENU: %s", _sMenu[_nMenuCurPos].name.c_str()));
-		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 3000);
+
+		debugMessage("MENU: %s (uid: %d)", _sMenu[_nMenuCurPos].name.c_str(), _sMenu[_nMenuCurPos].uid);
+		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 2000);
 		_nMenuLastPosChange = millis();
     }
 
 	// menu timeout, going back to clock display
-	if ((millis() - _nMenuLastPosChange) > 10000) {
+	if (_nMenuCurPos != CONTROLLER_MENU::CLOCK && (millis() - _nMenuLastPosChange) > 10000) {
 		_nMenuCurPos = CONTROLLER_MENU::CLOCK;
 		_nMenuLastPosChange = millis();
-		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 3000);
+		debugMessage("MENU Timeout! -> %s", _sMenu[_nMenuCurPos].name.c_str());
 	}
 
   	int8_t encoderDelta = _pKnob->encoderChanged();
   	if (encoderDelta == 0) return;
 
+	// user interaction reset timeout
+	_nMenuLastPosChange = millis();
+
 	switch(_sMenu[_nMenuCurPos].uid) {
-		case CONTROLLER_MENU::BRIGHTNESS: {
-			int brightness_index = _pDisplay->getBrightnessIndex();
-			brightness_index += encoderDelta;
-			_pDisplay->setBrightnessIndex(brightness_index);
-			brightness_index = _pDisplay->getBrightnessIndex();
-			debugMessage(formatString("MENU: %s - Brightness: %d", _sMenu[_nMenuCurPos].name.c_str(), brightness_index));
-			break;
-		}
-
 		case CONTROLLER_MENU::HUE: {
-			uint8_t current_display_effect = _pDisplay->get_display_effect();
-			switch(current_display_effect) {
-				case DISPLAY_EFFECT_DAYLIGHT_WHEEL: {
-					uint8_t color_wheel_angle = _pDisplay->getColorWheelAngle();
-					color_wheel_angle += encoderDelta*2;
-					_pDisplay->setColorWheelAngle(color_wheel_angle);
-					_pDisplay->scheduleRedraw(0);
-					break;
-				}
-				case DISPLAY_EFFECT_SOLID_COLOR: {
-					CHSV current_color = _pDisplay->getColor();
-					current_color.hue += encoderDelta*2;
-					_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
-					_pDisplay->scheduleRedraw(0);
-					break;
-				}
-			}
-			break;
-		}
-
-		case CONTROLLER_MENU::SATURATION: {
 			CHSV current_color = _pDisplay->getColor();
-			int32_t saturation = current_color.saturation;
-
-			saturation += encoderDelta*3;
-			if (saturation >= 255) saturation = 255;
-			if (saturation <= 0) saturation = 0;
-			current_color.saturation = saturation;
-
+			current_color.hue += encoderDelta*2;
 			_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
 			_pDisplay->scheduleRedraw(0);
 			break;
-        }
-
-		case CONTROLLER_MENU::EFFECT: {
-			if(encoderDelta>0) {
-				_pDisplay->adjust_and_save_new_display_effect(true);
-			} else if(encoderDelta<0) {
-				_pDisplay->adjust_and_save_new_display_effect(false);
-			}
-			debugMessage(formatString("current effect: %d", _pDisplay->get_display_effect()));
-			_pDisplay->setNotification(_pDisplay->get_display_effect_short(), 3000);
-			break;
 		}
 
-		case CONTROLLER_MENU::TIMEZONE: {
-			int8_t timeZone = _pDisplay->getTimezoneHour();
-			debugMessage(formatString("current TZ: %d", timeZone));
-			// FIXME: before shipping to north korea et al I'll have to implenment half-hour timezones as well
-			if(encoderDelta>0) timeZone++;
-			else if (encoderDelta<0) timeZone--;
-			debugMessage(formatString("new TZ: %d", timeZone));
-			_pDisplay->setTimezoneHour(timeZone);
+		// case CONTROLLER_MENU::SATURATION: {
+		// 	CHSV current_color = _pDisplay->getColor();
+		// 	int32_t saturation = current_color.saturation;
 
-			char notifcation[4] { 0, 0, 0, 0 };
-			if(timeZone>=0) {
-				notifcation[0] = '-';
-				notifcation[1] = '+';
-			}
-			else if(timeZone<0) {
-				notifcation[0] = ' ';
-				notifcation[1] = '-';
-			}
+		// 	saturation += encoderDelta*4;
+		// 	if (saturation >= 255) saturation = 255;
+		// 	if (saturation <= 0) saturation = 0;
+		// 	current_color.saturation = saturation;
 
-			int digit2 = (int) floor(abs(timeZone)/10);
-			if(digit2==0) {
-				notifcation[2] = ' ';
-			} else {
-				notifcation[2] = (int) floor(abs(timeZone)/10) + '0';
-			}
-			// TODO: Fix this. was : notifcation[3] = abs(timeZone)%10 + '0';
-			notifcation[3] = '0';
-			_pDisplay->setNotification(notifcation, 3000);
-			break;
-		}
+		// 	debugMessage("MENU: %s - Saturation: %d", _sMenu[_nMenuCurPos].name.c_str(), saturation);
 
-        case CONTROLLER_MENU::SET_HOUR: {
-			uint32_t ts = now();
-			int8_t hour_delta = encoderDelta;
-			ts += hour_delta*3600;
-			setTime(ts);
-			_pDisplay->scheduleRedraw(0);
-			break;
-        }
-
-        case CONTROLLER_MENU::SET_MINUTE: {
-			uint32_t ts = now();
-			int8_t min_delta = encoderDelta;
-			ts += min_delta*60;
-			setTime(ts);
-			_pDisplay->scheduleRedraw(0);
-			break;
-        }
+		// 	_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
+		// 	_pDisplay->scheduleRedraw(0);
+		// 	break;
+        // }
 
 		default: {
 			// by default, turning the knob defines the brightness of the clock
-			int brightness_index = _pDisplay->getBrightnessIndex();
-			brightness_index += encoderDelta;
-			_pDisplay->setBrightnessIndex(brightness_index);
-			brightness_index = _pDisplay->getBrightnessIndex();
-			debugMessage(formatString("Brightness: %d", brightness_index));
+			int brightness = _pDisplay->getBrightness();
+			brightness += encoderDelta*4;
+			_pDisplay->setBrightness(brightness);
+			debugMessage(formatString("Brightness: %d", _pDisplay->getBrightness()));
 			break;
 		}
     }
