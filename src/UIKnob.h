@@ -15,19 +15,22 @@ public:
 
   void update();
 
-  void setPosition(int16_t position);
-  int16_t getPosition();
-  int16_t encoderChanged();
+  void setEncoderBoundaries(long minEncoderValue, long maxEncoderValue, long position);
 
-  bool getState();
-  bool isPressed(int countThreshold=1);
-  bool isReleased(int countThreshold=1);
+  bool hasPositionChanged();
+  void setPosition(long position);
+  long getPosition();
+  long getPositionDiff();
+
+  bool isButtonPressed(int countThreshold=1);
+  bool isButtonReleased(int countThreshold=1);
 
   static void IRAM_ATTR handleEncoderInterrupt();
   static void IRAM_ATTR handleButtonInterrupt();
 
 private:
-  volatile int16_t _nEncoderCounter;
+  long _nEncoderPosition;
+  long _nEncoderPositionDiff;
   static AiEsp32RotaryEncoder *_pRotaryEncoder;
 };
 

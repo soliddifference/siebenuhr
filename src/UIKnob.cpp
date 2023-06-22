@@ -20,8 +20,11 @@ UIKnob::UIKnob(uint8_t encoderPinA, uint8_t encoderPinB, uint8_t buttonPin)
 	_pRotaryEncoder = new AiEsp32RotaryEncoder(encoderPinA, encoderPinB, buttonPin, -1, ROTARY_ENCODER_STEPS);
     _pRotaryEncoder->begin();
     _pRotaryEncoder->setup(handleEncoderInterrupt, handleButtonInterrupt);
-    _pRotaryEncoder->setBoundaries(0, 1000, false); //minValue, maxValue, circleValues true|false (when max go to min and vice versa)
+    _pRotaryEncoder->setBoundaries(0, 255, false); //minValue, maxValue, circleValues true|false (when max go to min and vice versa)
     _pRotaryEncoder->setAcceleration(250);
+
+	_nEncoderPosition = 0;
+	_nEncoderPositionDiff = 0;
 }
 
 UIKnob::~UIKnob() {
@@ -29,37 +32,37 @@ UIKnob::~UIKnob() {
 }
 
 void UIKnob::update() {
-	// todo
+	_nEncoderPositionDiff = _pRotaryEncoder->encoderChanged();
+	_nEncoderPosition = _pRotaryEncoder->readEncoder();		
 }
 
-int16_t UIKnob::encoderChanged()
-{
-	if (_pRotaryEncoder->encoderChanged()) {
-		_nEncoderCounter = _pRotaryEncoder->readEncoder();		
-        Serial.println(_nEncoderCounter);
-		return _nEncoderCounter;
-    }
-	return 0;
+void UIKnob::setEncoderBoundaries(long minEncoderValue, long maxEncoderValue, long position) {
+    _pRotaryEncoder->setBoundaries(minEncoderValue, maxEncoderValue, false);
+	setPosition(position);
 }
 
-void UIKnob::setPosition(int16_t position) {
-	_nEncoderCounter = position;
-	_pRotaryEncoder->setEncoderValue(_nEncoderCounter);
+bool UIKnob::hasPositionChanged() {
+	return _nEncoderPositionDiff != 0;
 }
 
-int16_t UIKnob::getPosition() {
-	return _nEncoderCounter;
+void UIKnob::setPosition(long position) {
+	_nEncoderPosition = position;
+	_nEncoderPositionDiff = 0;
+	_pRotaryEncoder->setEncoderValue(_nEncoderPosition);
 }
 
-bool UIKnob::getState() {
-	bool isEncoderButtonDown = _pRotaryEncoder->isEncoderButtonDown();
-	return isEncoderButtonDown;
+long UIKnob::getPosition() {
+	return _nEncoderPosition;
 }
 
-bool UIKnob::isPressed(int countThreshold) {
-	return getState();
+long UIKnob::getPositionDiff() {
+	return _nEncoderPositionDiff;
 }
 
-bool UIKnob::isReleased(int countThreshold) {
-	return !getState();
+bool UIKnob::isButtonPressed(int countThreshold) {
+	return _pRotaryEncoder->isEncoderButtonDown();
+}
+
+bool UIKnob::isButtonReleased(int countThreshold) {
+	return _pRotaryEncoder->isEncoderButtonClicked();
 }

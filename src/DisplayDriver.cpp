@@ -412,8 +412,7 @@ void DisplayDriver::setOperationMode(uint8_t mode)
 	}
 }
 
-uint8_t DisplayDriver::getOperationMode()
-{
+uint8_t DisplayDriver::getOperationMode() {
 	return _nOperationMode;
 }
 
@@ -421,20 +420,18 @@ uint8_t DisplayDriver::getOperationMode()
 Geters and setters for the brightness
 */
 
-int DisplayDriver::getBrightness()
-{
+int DisplayDriver::getBrightness() {
 	return _nBrightness;
 }
 
-void DisplayDriver::setBrightness(int value, bool saveToEEPROM)
-{
-	if (value > 255)
+void DisplayDriver::setBrightness(int value, bool saveToEEPROM) {
+	if (value > 255) {
 		value = 255;
-	else if (value < 0)
+	} else if (value < 0) {
 		value = 0;
+	}
 
-	if (saveToEEPROM)
-	{
+	if (saveToEEPROM) {
 		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_BRIGHTNESS, value);
 	}
 

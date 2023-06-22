@@ -7,6 +7,8 @@
 #include <Arduino.h>
 #include "Controller.h"
 
+#include <WiFi.h>
+
 using namespace siebenuhr;
 
 Controller* Controller::_pInstance = nullptr;
@@ -152,6 +154,7 @@ bool Controller::initializeDisplay(DisplayDriver* display) {
 	_pDisplay->setNotification(_cMessage, 3000);
 
 	_eState = CONTROLLER_STATE::initialized;
+	setMenu(CONTROLLER_MENU::CLOCK);
 
 	debugMessage("Controller::initializeDisplay");
 
@@ -199,13 +202,32 @@ bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
 			_strLastErrorDesc = "Failed to setup wifi component.";
 			return false;
 		}
+
+		debugMessage(formatString("SSID              : %s", WiFi.SSID()));
+		debugMessage(formatString("IP address (DHCP) : %s", WiFi.localIP()));
+		debugMessage(formatString("MAC address is    : %s", WiFi.macAddress()));
 	}
 	return true;
 }
 
 bool Controller::initializeNTP(bool enabled) {
 	_bNTPEnabled = enabled;
-	// todo:
+	if (_bWifiEnabled && _bNTPEnabled) {
+		String sTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
+		debugMessage(formatString("Timezone (EEPROM) : %s", sTimezone.c_str()));
+
+		setDebug(INFO);
+		while(timeStatus()==timeNotSet) {
+			updateNTP();
+			debugMessage("Waiting for time sync...");
+			delay(100);
+		}
+		waitForSync();
+		_pDisplay->setNewDefaultTimezone(sTimezone);
+	} else {
+		// todo: manual setup?
+	}
+	
 	return true;
 }
 
@@ -225,12 +247,12 @@ bool Controller::update() {
 
 	if (_pResetButton != nullptr) {
 		_pResetButton->update();
-		handleUIResetButton();
+		handleResetButton();
 	}
 
 	if (_pKnobEncoder != nullptr) {
-		// _pKnob->update();
-		handleUIKnob();
+		_pKnobEncoder->update();
+		handleMenu();
 	}
 
 	_pDisplay->update(_bWifiEnabled, _bNTPEnabled);
@@ -243,7 +265,7 @@ bool Controller::update() {
 	return true;
 }
 
-void Controller::handleUIResetButton() {
+void Controller::handleResetButton() {
 	if (_pResetButton->getState()) {
 	    int countdown_int = (5 - (int)(_pResetButton->getTimeSinceStateChange()/1000.f));
 	    if (countdown_int >= 0) {
@@ -267,64 +289,56 @@ void Controller::handleUIResetButton() {
 	} 
 }
 
-void Controller::handleUIKnob() {
-	if(_pKnobEncoder->isPressed()) {
+void Controller::setMenu(CONTROLLER_MENU menu) {
+	_nMenuCurPos = menu;
+	_nMenuLastPosChange = millis();
+
+	debugMessage("MENU: %s (uid: %d)", _sMenu[_nMenuCurPos].name.c_str(), _sMenu[_nMenuCurPos].uid);
+	
+	if (_nMenuCurPos == CONTROLLER_MENU::HUE) {
+		CHSV current_color = _pDisplay->getColor();
+		_pKnobEncoder->setEncoderBoundaries(0, 255, current_color.hue);
+	} else if (_nMenuCurPos == CONTROLLER_MENU::CLOCK) {
+		_pKnobEncoder->setEncoderBoundaries(0, 255, _pDisplay->getBrightness());
+	}
+}
+
+void Controller::handleMenu() {
+	if(_pKnobEncoder->isButtonReleased()) {
 		if (_nMenuCurPos ==  CONTROLLER_MENU::CLOCK) {
-			_nMenuCurPos = CONTROLLER_MENU::HUE;
+			setMenu(CONTROLLER_MENU::HUE);
 		} else {
-			_nMenuCurPos = CONTROLLER_MENU::CLOCK;
+			setMenu(CONTROLLER_MENU::CLOCK);
 		}
 
-		debugMessage("MENU: %s (uid: %d)", _sMenu[_nMenuCurPos].name.c_str(), _sMenu[_nMenuCurPos].uid);
 		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 2000);
-		_nMenuLastPosChange = millis();
     }
 
 	// menu timeout, going back to clock display
 	if (_nMenuCurPos != CONTROLLER_MENU::CLOCK && (millis() - _nMenuLastPosChange) > 10000) {
-		_nMenuCurPos = CONTROLLER_MENU::CLOCK;
-		_nMenuLastPosChange = millis();
+		setMenu(CONTROLLER_MENU::CLOCK);
 		debugMessage("MENU Timeout! -> %s", _sMenu[_nMenuCurPos].name.c_str());
 	}
 
-  	int8_t encoderDelta = _pKnobEncoder->encoderChanged();
-  	if (encoderDelta == 0) return;
+	if (_pKnobEncoder->hasPositionChanged()) {
+		long pos = _pKnobEncoder->getPosition(); 
+		_nMenuLastPosChange = millis();
 
-	// user interaction reset timeout
-	_nMenuLastPosChange = millis();
+		switch(_sMenu[_nMenuCurPos].uid) {
+			case CONTROLLER_MENU::HUE: {
+				CHSV current_color = _pDisplay->getColor();
+				current_color.hue = pos;
+				debugMessage(formatString("Hue: %d", current_color.hue));
+				_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
+				_pDisplay->scheduleRedraw(0);
+				break;
+			}
 
-	switch(_sMenu[_nMenuCurPos].uid) {
-		case CONTROLLER_MENU::HUE: {
-			CHSV current_color = _pDisplay->getColor();
-			current_color.hue += encoderDelta*2;
-			_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
-			_pDisplay->scheduleRedraw(0);
-			break;
+			case CONTROLLER_MENU::CLOCK: {
+				_pDisplay->setBrightness(pos);
+				debugMessage(formatString("Brightness: %d", _pDisplay->getBrightness()));
+				break;
+			}
 		}
-
-		// case CONTROLLER_MENU::SATURATION: {
-		// 	CHSV current_color = _pDisplay->getColor();
-		// 	int32_t saturation = current_color.saturation;
-
-		// 	saturation += encoderDelta*4;
-		// 	if (saturation >= 255) saturation = 255;
-		// 	if (saturation <= 0) saturation = 0;
-		// 	current_color.saturation = saturation;
-
-		// 	debugMessage("MENU: %s - Saturation: %d", _sMenu[_nMenuCurPos].name.c_str(), saturation);
-
-		// 	_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
-		// 	_pDisplay->scheduleRedraw(0);
-		// 	break;
-        // }
-
-		default: {
-			// by default, turning the knob defines the brightness of the clock
-			int brightness = _pDisplay->getBrightness();
-			brightness += encoderDelta*4;
-			_pDisplay->setBrightness(brightness);
-			debugMessage(formatString("Brightness: %d", _pDisplay->getBrightness()));
-			break;
-		}
-    }
+	}
 }

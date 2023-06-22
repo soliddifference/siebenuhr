@@ -15,6 +15,7 @@ enum CONTROLLER_STATE {
 	undefined,
 	initialized,
 	wifi_setup,
+	manualtime_setup
 };
 
 enum CONTROLLER_MENU {
@@ -77,8 +78,9 @@ private:
 
 	void saveToEEPROM();
 
-	void handleUIResetButton();
-	void handleUIKnob();
+	void setMenu(CONTROLLER_MENU menu);
+	void handleMenu();
+	void handleResetButton();
 
 	CONTROLLER_STATE _eState;
 	int _nLastErrorCode;

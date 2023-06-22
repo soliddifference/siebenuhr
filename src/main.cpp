@@ -39,11 +39,27 @@ void setup() {
     _cntrl->setResetButton(RESET_BUTTON);
     _cntrl->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
 
-    if (!_cntrl->initializeWifi(false, &wifiManager) || !_cntrl->initializeNTP(true) || !_cntrl->initializeDisplay(&Display)) {
+    if (!_cntrl->initializeDisplay(&Display)) {
         _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
-        _cntrl->debugMessage("7Uhr controller setup failed.");
+        _cntrl->debugMessage("7Uhr display setup failed.");
+        return;
+    }
+    Display.disableNotification();
+    Display.setOperationMode(OPERATION_MODE_CLOCK_HOURS);
+
+    if (!_cntrl->initializeWifi(false, &wifiManager)) {
+        _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
+        _cntrl->debugMessage("7Uhr wifi setup failed.");
         return;
     };
+
+    if (!_cntrl->initializeNTP(true)) {
+        _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
+        _cntrl->debugMessage("7Uhr NTP setup failed.");
+        return;
+    };
+
+    _cntrl->debugMessage("7Uhr controller setup complete.");
 }
 
 void _setup() {
