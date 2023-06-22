@@ -100,8 +100,7 @@ private:
 
 	// hardware interfaces
 	static UIButton* _pResetButton;
-	static UIKnob* _pKnob;
-	UIButton *_pButton;
+	static UIKnob* _pKnobEncoder;
 
 	// hardware components
 	DisplayDriver* _pDisplay;

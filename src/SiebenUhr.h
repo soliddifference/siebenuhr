@@ -9,6 +9,8 @@
 #include <SPIFFS.h>
 #include <EEPROM.h>
 
+#define QUINLEDBOARD
+
 // number of segments per glyph (hahaha, must be seven, as it's called siebenuhr, stupid!)
 static const int SEGMENT_COUNT = 7;
 // leds per single segment
@@ -73,10 +75,18 @@ static const int SIEBENUHR_WIRING = SIEBENUHR_WIRING_SERIAL;
 // static const int SIEBENUHR_WIRING = SIEBENUHR_WIRING_PARALELL;
 
 // data pin consts....
-static const int DATA_PIN_0 = 19;
-static const int DATA_PIN_1 = 21;
-static const int DATA_PIN_2 = 22;
-static const int DATA_PIN_3 = 23;
+
+#ifdef QUINLEDBOARD
+static const int DATA_PIN_0 = 16; 	// LED1 - LED SERIAL
+static const int DATA_PIN_1 = 15; 	// Q1 - KNOB-ENC-A
+static const int DATA_PIN_2 = 12; 	// Q2 - KNOB-ENC-B
+static const int DATA_PIN_3 = 2; 	// Q3 - KNOB-BUTTON
+#elif
+static const int DATA_PIN_0 = 19; // LED SERIAL
+static const int DATA_PIN_1 = 21; // KNOB-ENC-A
+static const int DATA_PIN_2 = 22; // KNOB-ENC-B
+static const int DATA_PIN_3 = 23; // KNOB-BUTTON
+#endif
 
 static const int ROTARY_ENCODER_A_PIN = DATA_PIN_1;
 static const int ROTARY_ENCODER_B_PIN = DATA_PIN_2;

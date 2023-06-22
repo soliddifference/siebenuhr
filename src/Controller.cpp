@@ -11,7 +11,7 @@ using namespace siebenuhr;
 
 Controller* Controller::_pInstance = nullptr;
 UIButton* Controller::_pResetButton = nullptr;
-UIKnob* Controller::_pKnob = nullptr;
+UIKnob* Controller::_pKnobEncoder = nullptr;
 
 const ControllerMenu_t Controller::_sMenu[Controller::_nMenuMaxEntries] = {
 		{CONTROLLER_MENU::CLOCK, "Display Clock", "CLCK"},
@@ -215,8 +215,7 @@ void Controller::setResetButton(int buttonResetPin) {
 }
 
 void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
-	_pKnob = new UIKnob(knobPinA, knobPinB, buttonPin);
-	_pKnob->registerCallbacks([]{_pKnob->callbackButton();}, []{_pKnob->callbackEncoder();});
+	_pKnobEncoder = new UIKnob(knobPinA, knobPinB, buttonPin);
 }
 
 bool Controller::update() {
@@ -229,8 +228,8 @@ bool Controller::update() {
 		handleUIResetButton();
 	}
 
-	if (_pKnob != nullptr) {
-		_pKnob->update();
+	if (_pKnobEncoder != nullptr) {
+		// _pKnob->update();
 		handleUIKnob();
 	}
 
@@ -269,7 +268,7 @@ void Controller::handleUIResetButton() {
 }
 
 void Controller::handleUIKnob() {
-	if(_pKnob->isPressed()) {
+	if(_pKnobEncoder->isPressed()) {
 		if (_nMenuCurPos ==  CONTROLLER_MENU::CLOCK) {
 			_nMenuCurPos = CONTROLLER_MENU::HUE;
 		} else {
@@ -288,7 +287,7 @@ void Controller::handleUIKnob() {
 		debugMessage("MENU Timeout! -> %s", _sMenu[_nMenuCurPos].name.c_str());
 	}
 
-  	int8_t encoderDelta = _pKnob->encoderChanged();
+  	int8_t encoderDelta = _pKnobEncoder->encoderChanged();
   	if (encoderDelta == 0) return;
 
 	// user interaction reset timeout

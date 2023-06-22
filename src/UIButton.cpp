@@ -1,10 +1,3 @@
-/*  Button.cpp
-  v0.1 tg 20180724 initial setup
-  v0.2 ys 20190422 refactoring
-
-  Class to handle the (reset) button on the siebenuhr
-*/
-
 #include <Arduino.h>
 #include "UIButton.h"
 
