@@ -12,10 +12,11 @@
 namespace siebenuhr {
 
 enum CONTROLLER_STATE {
-	undefined,
-	initialized,
-	wifi_setup,
-	manualtime_setup
+	UNDEFINED,
+	INITIALIZING,
+	SETUP_TIME,
+	SETUP_WIFI,
+	RUNNING
 };
 
 enum CONTROLLER_MENU {
@@ -50,6 +51,7 @@ public:
 	bool initializeNTP(bool enabled);
 	bool initializeDisplay(DisplayDriver* display);
 
+	void begin();
 	bool update();
 
 	// error handling
@@ -94,6 +96,8 @@ private:
 
 	bool _bFirstTimeSetup;
 	uint16_t _nSerialNumber;
+
+	uint8_t _nSetupHour, _nSetupMinute;
 
 	// EEPROM
 	bool _bDeferredSavingToEEPROMScheduled;

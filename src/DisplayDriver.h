@@ -6,6 +6,11 @@
 #include <RunningAverage.h>
 #include <ezTime.h>
 
+struct MessageExt {
+	char message[4];
+	CHSV color[4];
+};
+
 class DisplayDriver
 {
 	static const int DEBUG_COMPUTION_TIME = 0;
@@ -18,6 +23,7 @@ public:
 
 	void setMessage(char message[4], int fade_interval = BLENDIG_PERIOD);
 	void getMessage(char *current_message);
+	void setMessageExt(const struct MessageExt &msg, int fade_interval = BLENDIG_PERIOD);
 
 	void setColor(const struct CHSV &color, bool saveToEEPROM = false);
 	void setNextColor(CHSV color, int interval_ms);

@@ -36,7 +36,7 @@ void UIKnob::update() {
 	_nEncoderPosition = _pRotaryEncoder->readEncoder();		
 }
 
-void UIKnob::setEncoderBoundaries(long minEncoderValue, long maxEncoderValue, long position) {
+void UIKnob::setEncoderBoundaries(long minEncoderValue, long maxEncoderValue, long position, bool circleValues) {
     _pRotaryEncoder->setBoundaries(minEncoderValue, maxEncoderValue, false);
 	setPosition(position);
 }

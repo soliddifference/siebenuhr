@@ -15,7 +15,7 @@ public:
 
   void update();
 
-  void setEncoderBoundaries(long minEncoderValue, long maxEncoderValue, long position);
+  void setEncoderBoundaries(long minEncoderValue, long maxEncoderValue, long position, bool circleValues = false);
 
   bool hasPositionChanged();
   void setPosition(long position);

@@ -38,7 +38,7 @@ Controller::Controller() {
 	_bWifiEnabled = false;
 	_bNTPEnabled = false;
 
-	_eState = CONTROLLER_STATE::undefined;
+	_eState = CONTROLLER_STATE::INITIALIZING;
 	_nLastErrorCode = 0L;
 	_strLastErrorDesc = "undefined.";
 
@@ -142,25 +142,6 @@ void Controller::writeToEEPROM(const int EEPROM_address, uint8_t value, uint32_t
 	_bDeferredSavingToEEPROMScheduled = true;
 }
 
-bool Controller::initializeDisplay(DisplayDriver* display) {
-	_pDisplay = display;
-
-	if (_pDisplay == nullptr) {
-		_strLastErrorDesc = "Failed to setup display and glyphs.";
-		return false;
-	}
-
-	// set welcome message
-	_pDisplay->setNotification(_cMessage, 3000);
-
-	_eState = CONTROLLER_STATE::initialized;
-	setMenu(CONTROLLER_MENU::CLOCK);
-
-	debugMessage("Controller::initializeDisplay");
-
-	return true;
-}
-
 bool Controller::initializeDebug(bool enabled, int baud, int waitMilliseconds) {
 	_bDebugEnabled = enabled;
 	if (enabled) {
@@ -188,13 +169,24 @@ void Controller::debugMessage(const char *format, ...) {
 	}
 }
 
-
 void Controller::debugValue(const char *key, const int value) {
 	debugMessage(formatString("%s: %d", key, value));
 }
 
+bool Controller::initializeDisplay(DisplayDriver* display) {
+	_pDisplay = display;
+
+	if (_pDisplay == nullptr) {
+		_strLastErrorDesc = "Failed to setup display and glyphs.";
+		return false;
+	}
+
+    _pDisplay->disableNotification();
+
+	return true;
+}
+
 bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
-	_bWifiEnabled = enabled;
 	if (enabled) {
 		_pWiFiManager = WiFiManager;
 
@@ -202,6 +194,8 @@ bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
 			_strLastErrorDesc = "Failed to setup wifi component.";
 			return false;
 		}
+
+		_bWifiEnabled = enabled;
 
 		debugMessage(formatString("SSID              : %s", WiFi.SSID()));
 		debugMessage(formatString("IP address (DHCP) : %s", WiFi.localIP()));
@@ -211,8 +205,7 @@ bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
 }
 
 bool Controller::initializeNTP(bool enabled) {
-	_bNTPEnabled = enabled;
-	if (_bWifiEnabled && _bNTPEnabled) {
+	if (_bWifiEnabled && enabled) {
 		String sTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
 		debugMessage(formatString("Timezone (EEPROM) : %s", sTimezone.c_str()));
 
@@ -224,9 +217,8 @@ bool Controller::initializeNTP(bool enabled) {
 		}
 		waitForSync();
 		_pDisplay->setNewDefaultTimezone(sTimezone);
-	} else {
-		// todo: manual setup?
-	}
+		_bNTPEnabled = enabled;
+	} 
 	
 	return true;
 }
@@ -240,11 +232,22 @@ void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
 	_pKnobEncoder = new UIKnob(knobPinA, knobPinB, buttonPin);
 }
 
-bool Controller::update() {
-	if (_eState != CONTROLLER_STATE::initialized) {
-		return false;
-	}
+void Controller::begin() {
+	// config display
+	_pDisplay->setNotification(_cMessage, 3000);
+	_eState = CONTROLLER_STATE::RUNNING;
 
+	if (_bNTPEnabled) {
+		setMenu(CONTROLLER_MENU::CLOCK);
+	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
+	} else {
+		setMenu(CONTROLLER_MENU::SET_HOUR);
+	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
+		_eState = CONTROLLER_STATE::SETUP_TIME;
+	}
+}
+
+bool Controller::update() {
 	if (_pResetButton != nullptr) {
 		_pResetButton->update();
 		handleResetButton();
@@ -255,6 +258,25 @@ bool Controller::update() {
 		handleMenu();
 	}
 
+	if (_eState == CONTROLLER_STATE::SETUP_TIME) {
+		MessageExt msg;
+		msg.message[0] = (int)floor(_nSetupHour / 10) + '0';
+		msg.message[1] = _nSetupHour % 10 + '0';
+		msg.message[2] = (int)floor(_nSetupMinute / 10) + '0';
+		msg.message[3] = _nSetupMinute % 10 + '0';
+		if (_nMenuCurPos == CONTROLLER_MENU::SET_HOUR) {
+			msg.color[0] = CHSV(255, 0, 0);
+			msg.color[1] = CHSV(255, 0, 0);
+			msg.color[2] = CHSV(171, 255, 220);
+			msg.color[3] = CHSV(171, 255, 220);
+		} else {
+			msg.color[0] = CHSV(171, 255, 220);
+			msg.color[1] = CHSV(171, 255, 220);
+			msg.color[2] = CHSV(255, 0, 0);
+			msg.color[3] = CHSV(255, 0, 0);
+		}
+		_pDisplay->setMessageExt(msg);
+	} 
 	_pDisplay->update(_bWifiEnabled, _bNTPEnabled);
 
 	// save values to EEPROM (if scheduled)
@@ -295,27 +317,48 @@ void Controller::setMenu(CONTROLLER_MENU menu) {
 
 	debugMessage("MENU: %s (uid: %d)", _sMenu[_nMenuCurPos].name.c_str(), _sMenu[_nMenuCurPos].uid);
 	
-	if (_nMenuCurPos == CONTROLLER_MENU::HUE) {
+	switch (_nMenuCurPos) {			
+	case CONTROLLER_MENU::SET_HOUR:
+		_pKnobEncoder->setEncoderBoundaries(0, 23, DEFAULT_SETUP_HOUR, true);
+		break;
+	case CONTROLLER_MENU::SET_MINUTE:
+		_pKnobEncoder->setEncoderBoundaries(0, 59, DEFAULT_SETUP_MINUTE, true);
+		break;
+	case CONTROLLER_MENU::CLOCK:
+		_pKnobEncoder->setEncoderBoundaries(0, 255, _pDisplay->getBrightness());
+		break;
+	case CONTROLLER_MENU::HUE: 
 		CHSV current_color = _pDisplay->getColor();
 		_pKnobEncoder->setEncoderBoundaries(0, 255, current_color.hue);
-	} else if (_nMenuCurPos == CONTROLLER_MENU::CLOCK) {
-		_pKnobEncoder->setEncoderBoundaries(0, 255, _pDisplay->getBrightness());
+		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 2000);
+		break;
 	}
 }
 
 void Controller::handleMenu() {
 	if(_pKnobEncoder->isButtonReleased()) {
-		if (_nMenuCurPos ==  CONTROLLER_MENU::CLOCK) {
-			setMenu(CONTROLLER_MENU::HUE);
-		} else {
+		switch (_nMenuCurPos) {			
+		case CONTROLLER_MENU::SET_HOUR:
+			setMenu(CONTROLLER_MENU::SET_MINUTE);
+			break;
+		case CONTROLLER_MENU::SET_MINUTE:
+			// show time as normal
+		    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
+			setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
+			_eState = CONTROLLER_STATE::RUNNING;
 			setMenu(CONTROLLER_MENU::CLOCK);
+			break;
+		case CONTROLLER_MENU::CLOCK:
+			setMenu(CONTROLLER_MENU::HUE);
+			break;
+		case CONTROLLER_MENU::HUE:
+			setMenu(CONTROLLER_MENU::CLOCK);
+			break;
 		}
-
-		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 2000);
     }
 
 	// menu timeout, going back to clock display
-	if (_nMenuCurPos != CONTROLLER_MENU::CLOCK && (millis() - _nMenuLastPosChange) > 10000) {
+	if (_nMenuCurPos != CONTROLLER_MENU::HUE && (millis() - _nMenuLastPosChange) > 10000) {
 		setMenu(CONTROLLER_MENU::CLOCK);
 		debugMessage("MENU Timeout! -> %s", _sMenu[_nMenuCurPos].name.c_str());
 	}
@@ -325,6 +368,18 @@ void Controller::handleMenu() {
 		_nMenuLastPosChange = millis();
 
 		switch(_sMenu[_nMenuCurPos].uid) {
+			case CONTROLLER_MENU::SET_HOUR: {
+				_nSetupHour = pos;
+				debugMessage(formatString("Hour: %d", _nSetupHour));
+				break;
+			}
+
+			case CONTROLLER_MENU::SET_MINUTE: {
+				_nSetupMinute = pos;
+				debugMessage(formatString("Minute: %d", _nSetupMinute));
+				break;
+			}
+
 			case CONTROLLER_MENU::HUE: {
 				CHSV current_color = _pDisplay->getColor();
 				current_color.hue = pos;

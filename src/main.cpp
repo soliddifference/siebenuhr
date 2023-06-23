@@ -44,8 +44,6 @@ void setup() {
         _cntrl->debugMessage("7Uhr display setup failed.");
         return;
     }
-    Display.disableNotification();
-    Display.setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 
     if (!_cntrl->initializeWifi(false, &wifiManager)) {
         _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
@@ -53,13 +51,13 @@ void setup() {
         return;
     };
 
-    if (!_cntrl->initializeNTP(true)) {
+    if (!_cntrl->initializeNTP(false)) {
         _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
         _cntrl->debugMessage("7Uhr NTP setup failed.");
         return;
     };
 
-    _cntrl->debugMessage("7Uhr controller setup complete.");
+    _cntrl->begin();
 }
 
 void _setup() {

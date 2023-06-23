@@ -11,6 +11,9 @@
 
 #define QUINLEDBOARD
 
+static const int DEFAULT_SETUP_HOUR = 7;
+static const int DEFAULT_SETUP_MINUTE = 42;
+
 // number of segments per glyph (hahaha, must be seven, as it's called siebenuhr, stupid!)
 static const int SEGMENT_COUNT = 7;
 // leds per single segment
@@ -31,6 +34,7 @@ static const int OPERATION_MODE_PROGRESS_BAR_BOTTOM = 3;
 static const int OPERATION_MODE_PROGRESS_BAR_COMPLETE = 4;
 static const int OPERATION_MODE_PHOTO_SHOOTING = 5;
 static const int OPERATION_MODE_DEMO = 6;
+static const int OPERATION_MODE_TIME_SETUP = 7;
 
 static const int DISPLAY_EFFECT_DAYLIGHT_WHEEL = 0;
 static const int DISPLAY_EFFECT_SOLID_COLOR = 1;

@@ -69,7 +69,7 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 
 void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 {
-	if (wifiConnected) {
+	if (wifiConnected && NTPEnabled) {
 		siebenuhr::Controller::getInstance()->debugMessage("Give the ezTime-lib it's processing cycle.......");
 		events(); // give the ezTime-lib it's processing cycle.....
 	}
@@ -108,8 +108,7 @@ void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 		_nComputionTimeUpdateCount++;
 	}
 
-	if (_nComputionTimeUpdateCount >= DISPLAY_FREQUENCY)
-	{
+	if (_nComputionTimeUpdateCount >= DISPLAY_FREQUENCY) {
 		_nComputionTimeUpdateCount = 0;
 		if (DEBUG_COMPUTION_TIME) {
 			siebenuhr::Controller::getInstance()->debugMessage("DEBUG ø Compution Time: %f", _avgComputionTime.getAverage());
@@ -232,6 +231,15 @@ void DisplayDriver::getMessage(char *current_message)
 	for (int i = 0; i < 4; ++i)
 	{
 		current_message[i] = _currentMessage[i];
+	}
+}
+
+void DisplayDriver::setMessageExt(const struct MessageExt &msg, int fade_interval) {
+	for (int i = 0; i < 4; i++) {
+		_currentMessage[i] = msg.message[i];
+		_glyphs[i]->set_next_char(msg.message[i], fade_interval);
+		_glyphs[i]->set_color(msg.color[i]);
+		_glyphs[i]->set_next_color(msg.color[i], 0);
 	}
 }
 
