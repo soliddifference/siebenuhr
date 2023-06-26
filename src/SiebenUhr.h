@@ -280,22 +280,19 @@ inline void EEPROMWriteString(char eeprom_address, String data, int maxLength)
 	EEPROM.commit();
 }
 
-inline bool findTimezoneMatch(String inTimezone)
-{
+inline bool findTimezoneMatch(String inTimezone) {
 	SPIFFS.begin();
 	File dataFile = SPIFFS.open("/timezones.txt", FILE_READ);
 	String timezoneLine;
 	while (dataFile)
 	{
 		timezoneLine = dataFile.readStringUntil('\n');
-		// Serial.println(timezoneLine);
-		if (timezoneLine.equals(""))
-		{
+		if (timezoneLine.equals("")) {
 			dataFile.close();
 			return false;
 		}
-		if (inTimezone.equals(timezoneLine))
-		{
+
+		if (inTimezone.equals(timezoneLine)) {
 			dataFile.close();
 			return true;
 		}

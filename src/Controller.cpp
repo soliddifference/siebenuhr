@@ -5,6 +5,7 @@
 */
 
 #include <Arduino.h>
+#include "APController.h"
 #include "Controller.h"
 
 #include <WiFi.h>
@@ -256,6 +257,12 @@ bool Controller::update() {
 	if (_pKnobEncoder != nullptr) {
 		_pKnobEncoder->update();
 		handleMenu();
+
+		if (_pKnobEncoder->getButtonPressTime() >= 5000) {
+			APController::getInstance()->begin();
+			_eState == CONTROLLER_STATE::SETUP_WIFI;
+			_pDisplay->setNotification("WIFI");
+		}
 	}
 
 	if (_eState == CONTROLLER_STATE::SETUP_TIME) {

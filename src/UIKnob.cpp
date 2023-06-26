@@ -25,6 +25,8 @@ UIKnob::UIKnob(uint8_t encoderPinA, uint8_t encoderPinB, uint8_t buttonPin)
 
 	_nEncoderPosition = 0;
 	_nEncoderPositionDiff = 0;
+	_bButtonPrevPressedState = false;
+	_nButtonPressedTime = 0; 
 }
 
 UIKnob::~UIKnob() {
@@ -33,7 +35,20 @@ UIKnob::~UIKnob() {
 
 void UIKnob::update() {
 	_nEncoderPositionDiff = _pRotaryEncoder->encoderChanged();
-	_nEncoderPosition = _pRotaryEncoder->readEncoder();		
+	_nEncoderPosition = _pRotaryEncoder->readEncoder();	
+
+	if (isButtonPressed() && !_bButtonPrevPressedState) {
+		_bButtonPrevPressedState = true;
+		_nButtonPressedTime = millis();
+	} else {
+		_bButtonPrevPressedState = false;
+	}
+
+	if (isButtonPressed()) {
+		digitalWrite(FUNCTION_LED, HIGH);
+	} else {
+		digitalWrite(FUNCTION_LED, LOW);
+	}	
 }
 
 void UIKnob::setEncoderBoundaries(long minEncoderValue, long maxEncoderValue, long position, bool circleValues) {
@@ -65,4 +80,11 @@ bool UIKnob::isButtonPressed(int countThreshold) {
 
 bool UIKnob::isButtonReleased(int countThreshold) {
 	return _pRotaryEncoder->isEncoderButtonClicked();
+}
+
+long UIKnob::getButtonPressTime() {
+	if (isButtonPressed()) {
+		return 	millis() - _nButtonPressedTime;
+	}
+	return 0l;
 }
