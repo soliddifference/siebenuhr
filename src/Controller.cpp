@@ -269,9 +269,10 @@ bool Controller::update() {
 		handleMenu();
 
 		if (_pKnobEncoder->getButtonPressTime() >= 5000) {
-			APController::getInstance()->begin(_pWiFiManager);
+			debugMessage("start AP / WIFI setup...");
 			_eState == CONTROLLER_STATE::SETUP_WIFI;
 			_pDisplay->setNotification("WIFI");
+			APController::getInstance()->begin(_pWiFiManager);
 		}
 	}
 

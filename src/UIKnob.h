@@ -30,6 +30,7 @@ public:
   static void IRAM_ATTR handleButtonInterrupt();
 
 private:
+  bool _bButtonPressedState;
 	bool _bButtonPrevPressedState;
 	long _nButtonPressedTime; 
   long _nEncoderPosition;

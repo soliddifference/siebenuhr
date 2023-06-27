@@ -36,18 +36,17 @@ UIKnob::~UIKnob() {
 void UIKnob::update() {
 	_nEncoderPositionDiff = _pRotaryEncoder->encoderChanged();
 	_nEncoderPosition = _pRotaryEncoder->readEncoder();	
-
-	if (isButtonPressed() && !_bButtonPrevPressedState) {
-		_bButtonPrevPressedState = true;
-		_nButtonPressedTime = millis();
-	} else {
-		_bButtonPrevPressedState = false;
-	}
+	_bButtonPressedState = _pRotaryEncoder->isEncoderButtonDown();
 
 	if (isButtonPressed()) {
 		digitalWrite(FUNCTION_LED, HIGH);
+		if (!_bButtonPrevPressedState) {
+			_bButtonPrevPressedState = true;
+			_nButtonPressedTime = millis();
+		}
 	} else {
 		digitalWrite(FUNCTION_LED, LOW);
+		_bButtonPrevPressedState = false;
 	}	
 }
 
@@ -75,7 +74,7 @@ long UIKnob::getPositionDiff() {
 }
 
 bool UIKnob::isButtonPressed(int countThreshold) {
-	return _pRotaryEncoder->isEncoderButtonDown();
+	return _bButtonPressedState;
 }
 
 bool UIKnob::isButtonReleased(int countThreshold) {
