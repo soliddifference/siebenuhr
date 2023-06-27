@@ -61,8 +61,10 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_nColorWheelAngle = _inst->readFromEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE);
 	_nDisplayEffect = _inst->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
 
-	_inst->debugMessage("Config loaded! Color=%d Brightness=%d", _solidColor.hue, _nBrightness);
-	_inst->debugMessage("Display:Setup..");
+	_inst->debugMessage("Display setup completed.");
+	_inst->debugMessage("Color          : %d", _solidColor.hue);
+	_inst->debugMessage("Brightness     : %d", _nBrightness);
+	_inst->debugMessage("Timezone Hours : %d", _nTimezone);
 
 	setPower(true);
 }

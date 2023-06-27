@@ -99,7 +99,12 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 		saveToEEPROM();
 	}
 
-	debugValue("SerialNumber", _nSerialNumber);
+	if (true) {
+		bool useWifi = (readFromEEPROM(EEPROM_ADDRESS_WIFI_ENABLED) == 1);
+		debugMessage("EEPROM setup completed.");
+		debugMessage("SerialNumber   : %d", _nSerialNumber);
+		debugMessage("Enable WIFI    : %s", useWifi ? "true" : "false");
+	}
 }
 
 uint8_t Controller::readFromEEPROM(uint8_t EEPROM_address) {
@@ -370,7 +375,7 @@ void Controller::handleMenu() {
     }
 
 	// menu timeout, going back to clock display
-	if (_nMenuCurPos != CONTROLLER_MENU::HUE && (millis() - _nMenuLastPosChange) > 10000) {
+	if (_nMenuCurPos == CONTROLLER_MENU::HUE && (millis() - _nMenuLastPosChange) > 10000) {
 		setMenu(CONTROLLER_MENU::CLOCK);
 		debugMessage("MENU Timeout! -> %s", _sMenu[_nMenuCurPos].name.c_str());
 	}
@@ -382,13 +387,13 @@ void Controller::handleMenu() {
 		switch(_sMenu[_nMenuCurPos].uid) {
 			case CONTROLLER_MENU::SET_HOUR: {
 				_nSetupHour = pos;
-				debugMessage(formatString("Hour: %d", _nSetupHour));
+				debugMessage("manual time setup (HOUR) %d:%d", _nSetupHour, _nSetupMinute);
 				break;
 			}
 
 			case CONTROLLER_MENU::SET_MINUTE: {
 				_nSetupMinute = pos;
-				debugMessage(formatString("Minute: %d", _nSetupMinute));
+				debugMessage("manual time setup (MINUTE) %d:%d", _nSetupHour, _nSetupMinute);
 				break;
 			}
 
