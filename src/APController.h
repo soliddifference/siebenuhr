@@ -2,6 +2,7 @@
 #define _7U_APCONTROLLER_H
 
 #include "SiebenUhr.h"
+#include <ESPAsyncWiFiManager.h>
 
 namespace siebenuhr {
 
@@ -12,11 +13,13 @@ public:
 
     static APController* getInstance();
 
-    void begin();
+    void begin(AsyncWiFiManager* pWiFiManager);
+
+    void getNetworkInfo();
 
 private:
-    void setupWifi();
-    void resetWifiSettingsAndReboot();
+    void setupWifi(AsyncWiFiManager* pWiFiManager);
+    void resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager);
 
     static APController* _pInstance;
 

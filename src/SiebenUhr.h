@@ -49,6 +49,7 @@ static const int EEPROM_ADDRESS_BRIGHTNESS = 5;
 static const int EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX = 6;
 static const int EEPROM_ADDRESS_COLOR_WHEEL_ANGLE = 7;
 static const int EEPROM_ADDRESS_TIMEZONE_HOUR = 8;
+static const int EEPROM_ADDRESS_WIFI_ENABLED = 9;
 static const int EEPROM_ADDRESS_TIMEZONE_OLSON_STRING = 100;
 /* the length of the TZ string. Currenlty the longest on is 37 chars long
    (America/Argentina/ComodRivadavia) so 40 should be enough.

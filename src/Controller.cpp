@@ -94,6 +94,7 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 		writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
 		writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
 		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, 1, 0);
+		writeToEEPROM(EEPROM_ADDRESS_WIFI_ENABLED, 0, 0);
 
 		saveToEEPROM();
 	}
@@ -188,20 +189,24 @@ bool Controller::initializeDisplay(DisplayDriver* display) {
 }
 
 bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
+	_pWiFiManager = WiFiManager;
+	if (_pWiFiManager == nullptr) {
+		_strLastErrorDesc = "Failed to setup wifi component.";
+		return false;
+	}
+
 	if (enabled) {
-		_pWiFiManager = WiFiManager;
-
-		if (_pWiFiManager == nullptr) {
-			_strLastErrorDesc = "Failed to setup wifi component.";
-			return false;
-		}
-
+		APController::getInstance()->begin(_pWiFiManager);
+		
 		_bWifiEnabled = enabled;
 
-		debugMessage(formatString("SSID              : %s", WiFi.SSID()));
-		debugMessage(formatString("IP address (DHCP) : %s", WiFi.localIP()));
-		debugMessage(formatString("MAC address is    : %s", WiFi.macAddress()));
-	}
+		APController::getInstance()->getNetworkInfo();
+	} else {
+		WiFi.disconnect();
+  		WiFi.mode(WIFI_OFF);
+		_bWifiEnabled = false;
+}
+
 	return true;
 }
 
@@ -259,7 +264,7 @@ bool Controller::update() {
 		handleMenu();
 
 		if (_pKnobEncoder->getButtonPressTime() >= 5000) {
-			APController::getInstance()->begin();
+			APController::getInstance()->begin(_pWiFiManager);
 			_eState == CONTROLLER_STATE::SETUP_WIFI;
 			_pDisplay->setNotification("WIFI");
 		}

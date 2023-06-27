@@ -14,16 +14,15 @@
 #include "DisplayDriver.h"
 
 // NTP Servers:
-static const char ntpServerName[] = "0.ch.pool.ntp.org"; // us.pool.ntp.org
+// static const char ntpServerName[] = "0.ch.pool.ntp.org"; // us.pool.ntp.org
 
-int8_t minutesTimeZone = 0;
+// int8_t minutesTimeZone = 0;
 
 DisplayDriver Display;
 
 //WebDriver webdriver(&Display);
 AsyncWebServer server(80);
 DNSServer dns;
-
 AsyncWiFiManager wifiManager(&server, &dns);
 
 void setup() {
