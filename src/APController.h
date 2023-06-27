@@ -13,12 +13,11 @@ public:
 
     static APController* getInstance();
 
-    void begin(AsyncWiFiManager* pWiFiManager);
-
+    bool begin(AsyncWiFiManager* pWiFiManager);
     void getNetworkInfo();
 
 private:
-    void setupWifi(AsyncWiFiManager* pWiFiManager);
+    bool setupWifi(AsyncWiFiManager* pWiFiManager);
     void resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager);
 
     static APController* _pInstance;

@@ -29,42 +29,46 @@ APController::APController() {
     // todo
 }
 
-void APController::begin(AsyncWiFiManager* pWiFiManager) {
+bool APController::begin(AsyncWiFiManager* pWiFiManager) {
 	Controller::getInstance()->debugMessage("Starting Access Point...");
-	setupWifi(pWiFiManager);
+	return setupWifi(pWiFiManager);
 }
 
 void saveConfigCallback() {
-    // shouldSaveConfig = true;
+    siebenuhr::Controller::getInstance()->debugMessage("Save Wifi Config now...");
 }
 
-void APController::setupWifi(AsyncWiFiManager* pWiFiManager) {
+bool APController::setupWifi(AsyncWiFiManager* pWiFiManager) {
 	siebenuhr::Controller *_inst = siebenuhr::Controller::getInstance(); // just for convinience
     if (_inst == nullptr)
-        return;
+        return false;
 
 	sprintf(_sIdentifier, "Siebenuhr_%04d WiFi setup", _inst->getSerialNumber());
 
-    pWiFiManager->setDebugOutput(false);
+    // pWiFiManager->resetSettings();
+	WiFi.disconnect(true, true);
+    pWiFiManager->setTimeout(180);
+	pWiFiManager->setDebugOutput(false);
     pWiFiManager->setSaveConfigCallback(saveConfigCallback);
 
 	pWiFiManager->addParameter(&custom_ap_text);
 	pWiFiManager->addParameter(&custom_ap_timezone);
 
-    WiFi.hostname(_sIdentifier);
-	pWiFiManager->autoConnect(_sIdentifier);
-    // wifiManager.startConfigPortal(_sIdentifier);
+    // WiFi.hostname(_sIdentifier);
+	// pWiFiManager->autoConnect(_sIdentifier);
 
-	// FIXME move EEPROM part to better place, once refactoring of the DisplayDriver is done
-	_cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
-	if(!findTimezoneMatch(_cTimezone)) {
-		_inst->debugMessage(formatString("EEPROM timezone didn't match any existing timezone. The value searched for was: %s", _cTimezone.c_str()));
-		_inst->debugMessage(formatString("Saving timezone from captive portal or default value to EEPROM: %s", custom_ap_timezone.getValue()));
-		EEPROMWriteString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, custom_ap_timezone.getValue(), EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
+    if (pWiFiManager->startConfigPortal(_sIdentifier)) {
+		// FIXME move EEPROM part to better place, once refactoring of the DisplayDriver is done
+		_cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
+		if(!findTimezoneMatch(_cTimezone)) {
+			_inst->debugMessage("EEPROM timezone didn't match any existing timezone. The value searched for was: %s", _cTimezone.c_str());
+			_inst->debugMessage("Saving timezone from captive portal or default value to EEPROM: %s", custom_ap_timezone.getValue());
+			EEPROMWriteString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, custom_ap_timezone.getValue(), EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
+		}
+		// _inst->writeToEEPROM(EEPROM_ADDRESS_WIFI_ENABLED, 1);
+		return true;
 	}
-	_inst->writeToEEPROM(EEPROM_ADDRESS_WIFI_ENABLED, 1);
-	
-	// resetWifiSettingsAndReboot(pWiFiManager);
+	return false;
 }
 
 void APController::resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager) {
@@ -79,15 +83,15 @@ void APController::getNetworkInfo() {
 		if (_inst == nullptr)
 			return;
 
-		_cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
-		_inst->debugMessage(formatString("Timezone (EEPROM) : %s", _cTimezone.c_str()));
+		// _cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
+		// _inst->debugMessage(formatString("Timezone (EEPROM) : %s", _cTimezone.c_str()));
 
-		_inst->debugMessage(formatString("Network information for %s", _cTimezone.c_str()));
-		_inst->debugMessage(formatString("SSID              : %s", WiFi.SSID()));
-		_inst->debugMessage(formatString("BSSID             : %s", WiFi.BSSIDstr()));
-		_inst->debugMessage(formatString("Gateway IP        : %s", WiFi.gatewayIP()));
-		_inst->debugMessage(formatString("Subnet Mask       : %s", WiFi.subnetMask()));
-		_inst->debugMessage(formatString("IP address (DHCP) : %s", WiFi.localIP()));
-		_inst->debugMessage(formatString("MAC address is    : %s", WiFi.macAddress()));
+		_inst->debugMessage(formatString("Network connected."));
+		_inst->debugMessage(formatString("SSID              : %s", WiFi.SSID().c_str()));
+		_inst->debugMessage(formatString("BSSID             : %s", WiFi.BSSIDstr().c_str()));
+		_inst->debugMessage(formatString("Gateway IP        : %s", WiFi.gatewayIP().toString().c_str()));
+		_inst->debugMessage(formatString("Subnet Mask       : %s", WiFi.subnetMask().toString().c_str()));
+		_inst->debugMessage(formatString("IP address (DHCP) : %s", WiFi.localIP().toString().c_str()));
+		_inst->debugMessage(formatString("MAC address is    : %s", WiFi.macAddress().c_str()));
     }
 }

@@ -201,16 +201,17 @@ bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
 	}
 
 	if (enabled) {
-		APController::getInstance()->begin(_pWiFiManager);
-		
-		_bWifiEnabled = enabled;
-
-		APController::getInstance()->getNetworkInfo();
+		if (_pWiFiManager->autoConnect(3, 500)) {
+			_bWifiEnabled = enabled;
+			APController::getInstance()->getNetworkInfo();
+		} else {
+			debugMessage("Failed to connect to WIFI....");
+		}
 	} else {
 		WiFi.disconnect();
   		WiFi.mode(WIFI_OFF);
 		_bWifiEnabled = false;
-}
+	}
 
 	return true;
 }
@@ -273,6 +274,9 @@ bool Controller::update() {
 			_eState == CONTROLLER_STATE::SETUP_WIFI;
 			_pDisplay->setNotification("WIFI");
 			APController::getInstance()->begin(_pWiFiManager);
+
+			initializeWifi(true, _pWiFiManager);
+			// initializeNTP(true);
 		}
 	}
 

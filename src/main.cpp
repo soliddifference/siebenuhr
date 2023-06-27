@@ -5,7 +5,6 @@
 #include <WiFiUdp.h>
 #include <ezTime.h>
 
-//needed for library
 #include <DNSServer.h>
 #include <ESPAsyncWiFiManager.h>
 #include <ESPmDNS.h>
@@ -13,14 +12,8 @@
 #include "Controller.h" 
 #include "DisplayDriver.h"
 
-// NTP Servers:
-// static const char ntpServerName[] = "0.ch.pool.ntp.org"; // us.pool.ntp.org
-
-// int8_t minutesTimeZone = 0;
-
 DisplayDriver Display;
 
-//WebDriver webdriver(&Display);
 AsyncWebServer server(80);
 DNSServer dns;
 AsyncWiFiManager wifiManager(&server, &dns);
@@ -35,7 +28,7 @@ void setup() {
 
     Display.setup(_cntrl->getFirstTimeSetup());
 
-    _cntrl->setResetButton(RESET_BUTTON);
+    // _cntrl->setResetButton(RESET_BUTTON);
     _cntrl->setKnob(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN);
 
     if (!_cntrl->initializeDisplay(&Display)) {
