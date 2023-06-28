@@ -17,13 +17,15 @@ public:
     void getNetworkInfo();
 
 private:
-    bool setupWifi(AsyncWiFiManager* pWiFiManager);
+    bool setupAPCaptivePortal(AsyncWiFiManager* pWiFiManager);
+    String buildTimezoneCheckboxOption(int default_tz);
+
     void resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager);
 
     static APController* _pInstance;
 
     char _sIdentifier[100];
-    String _cTimezone;
+    bool _bUIConfigured;
 };
 
 }

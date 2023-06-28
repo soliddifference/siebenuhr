@@ -48,6 +48,7 @@ static const int EEPROM_ADDRESS_V = 4;
 static const int EEPROM_ADDRESS_BRIGHTNESS = 5;
 static const int EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX = 6;
 static const int EEPROM_ADDRESS_COLOR_WHEEL_ANGLE = 7;
+static const int EEPROM_ADDRESS_TIMEZONE_ID = 8;
 static const int EEPROM_ADDRESS_TIMEZONE_HOUR = 8;
 static const int EEPROM_ADDRESS_WIFI_ENABLED = 9;
 static const int EEPROM_ADDRESS_TIMEZONE_OLSON_STRING = 100;
@@ -279,26 +280,6 @@ inline void EEPROMWriteString(char eeprom_address, String data, int maxLength)
 	}
 	EEPROM.write(eeprom_address + _size, '\0'); // Add termination null character for String Data
 	EEPROM.commit();
-}
-
-inline bool findTimezoneMatch(String inTimezone) {
-	SPIFFS.begin();
-	File dataFile = SPIFFS.open("/timezones.txt", FILE_READ);
-	String timezoneLine;
-	while (dataFile)
-	{
-		timezoneLine = dataFile.readStringUntil('\n');
-		if (timezoneLine.equals("")) {
-			dataFile.close();
-			return false;
-		}
-
-		if (inTimezone.equals(timezoneLine)) {
-			dataFile.close();
-			return true;
-		}
-	}
-	return false;
 }
 
 #endif

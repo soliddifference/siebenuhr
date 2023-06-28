@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include "APController.h"
 #include "Controller.h"
+#include "TimeZones.h"
 
 #include <WiFi.h>
 
@@ -93,6 +94,7 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 		writeToEEPROM(EEPROM_ADDRESS_BRIGHTNESS, 80, 0);
 		writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
 		writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
+		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, 11  /*Europe-Zurich*/, 0);
 		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, 1, 0);
 		writeToEEPROM(EEPROM_ADDRESS_WIFI_ENABLED, 0, 0);
 
@@ -101,8 +103,10 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 
 	if (true) {
 		bool useWifi = (readFromEEPROM(EEPROM_ADDRESS_WIFI_ENABLED) == 1);
-		debugMessage("EEPROM setup completed.");
+		int nTimeZoneID = readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
+		debugMessage("\nEEPROM setup completed.");
 		debugMessage("SerialNumber   : %d", _nSerialNumber);
+		debugMessage("Timezone       : %s", __timezones[nTimeZoneID].name);
 		debugMessage("Enable WIFI    : %s", useWifi ? "true" : "false");
 	}
 }
@@ -270,6 +274,7 @@ bool Controller::update() {
 		handleMenu();
 
 		if (_pKnobEncoder->getButtonPressTime() >= 5000) {
+		// if (true) {
 			debugMessage("start AP / WIFI setup...");
 			_eState == CONTROLLER_STATE::SETUP_WIFI;
 			_pDisplay->setNotification("WIFI");
