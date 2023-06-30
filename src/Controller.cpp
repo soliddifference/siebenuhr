@@ -104,6 +104,7 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 	if (true) {
 		bool useWifi = (readFromEEPROM(EEPROM_ADDRESS_WIFI_ENABLED) == 1);
 		int nTimeZoneID = readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
+
 		debugMessage("\nEEPROM setup completed.");
 		debugMessage("SerialNumber   : %d", _nSerialNumber);
 		debugMessage("Timezone       : %s", __timezones[nTimeZoneID].name);
@@ -264,11 +265,12 @@ void Controller::begin() {
 }
 
 bool Controller::update() {
+/*	
 	if (_pResetButton != nullptr) {
 		_pResetButton->update();
 		handleResetButton();
 	}
-
+*/
 	if (_pKnobEncoder != nullptr) {
 		_pKnobEncoder->update();
 		handleMenu();
@@ -287,23 +289,23 @@ bool Controller::update() {
 
 	if (_eState == CONTROLLER_STATE::SETUP_TIME) {
 		MessageExt msg;
+		CHSV highlight = CHSV(140, 255, 220);
+		// CHSV lowlight = _pDisplay->getColor();
+		CHSV lowlight = CHSV(171, 255, 220);
 		msg.message[0] = (int)floor(_nSetupHour / 10) + '0';
 		msg.message[1] = _nSetupHour % 10 + '0';
 		msg.message[2] = (int)floor(_nSetupMinute / 10) + '0';
 		msg.message[3] = _nSetupMinute % 10 + '0';
 		if (_nMenuCurPos == CONTROLLER_MENU::SET_HOUR) {
-			msg.color[0] = CHSV(255, 0, 0);
-			msg.color[1] = CHSV(255, 0, 0);
-			msg.color[2] = CHSV(171, 255, 220);
-			msg.color[3] = CHSV(171, 255, 220);
+			msg.color[0] = msg.color[1] = highlight;
+			msg.color[2] = msg.color[3] = lowlight;
 		} else {
-			msg.color[0] = CHSV(171, 255, 220);
-			msg.color[1] = CHSV(171, 255, 220);
-			msg.color[2] = CHSV(255, 0, 0);
-			msg.color[3] = CHSV(255, 0, 0);
+			msg.color[0] = msg.color[1] = lowlight;
+			msg.color[2] = msg.color[3] = highlight;
 		}
 		_pDisplay->setMessageExt(msg);
-	} 
+	}
+
 	_pDisplay->update(_bWifiEnabled, _bNTPEnabled);
 
 	// save values to EEPROM (if scheduled)
@@ -352,12 +354,13 @@ void Controller::setMenu(CONTROLLER_MENU menu) {
 		_pKnobEncoder->setEncoderBoundaries(0, 59, DEFAULT_SETUP_MINUTE, true);
 		break;
 	case CONTROLLER_MENU::CLOCK:
-		_pKnobEncoder->setEncoderBoundaries(0, 255, _pDisplay->getBrightness());
+		_pKnobEncoder->setEncoderBoundaries(5, 255, _pDisplay->getBrightness());
 		break;
 	case CONTROLLER_MENU::HUE: 
+		// _pKnobEncoder->setEncoderBoundaries(0, 1000, 0, true);
 		CHSV current_color = _pDisplay->getColor();
-		_pKnobEncoder->setEncoderBoundaries(0, 255, current_color.hue);
-		_pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 2000);
+		_pKnobEncoder->setEncoderBoundaries(0, 255, current_color.hue, true);
+		// _pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 2000);
 		break;
 	}
 }
@@ -370,6 +373,8 @@ void Controller::handleMenu() {
 			break;
 		case CONTROLLER_MENU::SET_MINUTE:
 			// show time as normal
+			_pDisplay->setColor(_pDisplay->getColor());
+
 		    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 			setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
 			_eState = CONTROLLER_STATE::RUNNING;
@@ -392,6 +397,7 @@ void Controller::handleMenu() {
 
 	if (_pKnobEncoder->hasPositionChanged()) {
 		long pos = _pKnobEncoder->getPosition(); 
+		long delta = _pKnobEncoder->getPositionDiff();
 		_nMenuLastPosChange = millis();
 
 		switch(_sMenu[_nMenuCurPos].uid) {
@@ -408,10 +414,10 @@ void Controller::handleMenu() {
 			}
 
 			case CONTROLLER_MENU::HUE: {
-				CHSV current_color = _pDisplay->getColor();
-				current_color.hue = pos;
-				debugMessage(formatString("Hue: %d", current_color.hue));
-				_pDisplay->setColor(current_color, true /* SAFE TO EEPROM*/);
+				CHSV color = CHSV( pos, 255, 220);
+				debugMessage(formatString("Hue: %d", color.hue));
+				_pDisplay->setColor(color, true /* SAFE TO EEPROM*/);
+
 				_pDisplay->scheduleRedraw(0);
 				break;
 			}

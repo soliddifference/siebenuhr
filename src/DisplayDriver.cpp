@@ -77,7 +77,8 @@ void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 	}
 
 	unsigned long now = millis();
-	if ((now - _nLastClockUpdate) >= DISPLAY_REFRESH_INTERVAL) {
+	// if ((now - _nLastClockUpdate) >= DISPLAY_REFRESH_INTERVAL) {
+	if(true){
 		unsigned long t_1 = millis();
 
 		switch (_nOperationMode)
@@ -135,6 +136,10 @@ void DisplayDriver::updateClock()
 		message[1] = hour() % 10 + '0';
 		message[2] = (int)floor(minute() / 10) + '0';
 		message[3] = minute() % 10 + '0';
+
+
+		// siebenuhr::Controller::getInstance()->debugMessage("... %d", getOperationMode());
+
 		setMessage(message);
 		printCurrentTime();
 		scheduleRedraw();
