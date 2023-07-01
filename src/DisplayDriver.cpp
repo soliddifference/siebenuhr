@@ -67,7 +67,7 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	setPower(true);
 
 	setNotification(String("7uhr").c_str());
-	update();
+	update(false, false);
 	sleep(3000);
 }
 
