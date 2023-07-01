@@ -17,6 +17,10 @@ using namespace siebenuhr;
 
 APController* APController::_pInstance = nullptr;
 
+AsyncWebServer server(80);
+DNSServer dns;
+AsyncWiFiManager wifiManager(&server, &dns);
+
 APController* APController::getInstance(){
 	if (APController::_pInstance == nullptr) {
 		APController::_pInstance = new APController();
@@ -25,16 +29,14 @@ APController* APController::getInstance(){
 }
 
 APController::APController() {
-	_bUIConfigured = false;
+	_nSelectedTimeZoneID = -1;
+	_pCustomTZDropdown = nullptr;
+	_pCustomTZHidden = nullptr;
 }
 
 bool APController::begin() {
 	Controller::getInstance()->debugMessage("Starting Access Point...");
 	return setupAPCaptivePortal();
-}
-
-void saveConfigCallback() {
-    siebenuhr::Controller::getInstance()->debugMessage("Save Wifi Config now...");
 }
 
 String APController::buildTimezoneCheckboxOption(int default_tz) {
@@ -59,6 +61,7 @@ String APController::buildTimezoneCheckboxOption(int default_tz) {
 	// document.querySelector("[for='key_custom']").hidden = true;
 
 	checkboxTimeZone.replace(String("%d"), String(default_tz));
+	// siebenuhr::Controller::getInstance()->debugMessage(checkboxTimeZone);
 
 	return checkboxTimeZone;
 }
@@ -70,26 +73,27 @@ bool APController::setupAPCaptivePortal() {
 
 	sprintf(_sIdentifier, "SiebenuhrAP");
 
-	AsyncWebServer server(80);
-	DNSServer dns;
-	AsyncWiFiManager wifiManager(&server, &dns);
-
+	WiFi.disconnect(true, true);
     wifiManager.resetSettings();
-	// WiFi.disconnect(true, true);
-    // pWiFiManager->setTimeout(180);
 	wifiManager.setDebugOutput(false);
-    // pWiFiManager->setSaveConfigCallback(saveConfigCallback);
 
 	int curTimezoneID = (int)_inst->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
-	String checkboxTimeZone = buildTimezoneCheckboxOption(curTimezoneID);
-	AsyncWiFiManagerParameter custom_tz_dropdown(checkboxTimeZone.c_str());
+	if (_pCustomTZDropdown == nullptr && _pCustomTZHidden == nullptr) {
+		char convertedValue[6];
+		sprintf(convertedValue, "%d", curTimezoneID); // Need to convert to string to display a default value.
+		_pCustomTZHidden = new AsyncWiFiManagerParameter("key_custom", "Will be hidden", convertedValue, 3);
+		wifiManager.addParameter(_pCustomTZHidden); // Needs to be added before the javascript that hides it
+	}
 
-	char convertedValue[6];
-	sprintf(convertedValue, "%d", curTimezoneID); // Need to convert to string to display a default value.
-	AsyncWiFiManagerParameter custom_tz_hidden("key_custom", "Will be hidden", convertedValue, 3);
-
-	wifiManager.addParameter(&custom_tz_hidden); // Needs to be added before the javascript that hides it
-	wifiManager.addParameter(&custom_tz_dropdown);
+	if (_pCustomTZDropdown == nullptr) {
+		_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
+		_pCustomTZDropdown = new AsyncWiFiManagerParameterExt(_sDropDownTimeZoneHTML.c_str());
+		wifiManager.addParameter(_pCustomTZDropdown);
+	} else {
+		// if control already exists, just update the custom HTML (initial selection of timeszone might have changed since first initialization)
+		_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
+		_pCustomTZDropdown->setCustomHTML(_sDropDownTimeZoneHTML.c_str());
+	}
 
     if (wifiManager.startConfigPortal(_sIdentifier)) {
 
@@ -101,11 +105,17 @@ bool APController::setupAPCaptivePortal() {
 		_inst->debugMessage("PSWD: %s", pwd.c_str());
 		EEPROMWriteString(EEPROM_ADDRESS_WIFI_PSWD, pwd.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
 
-		int newTimezoneID = String(custom_tz_hidden.getValue()).toInt();
-		_inst->debugMessage("Timezone select: %s", __timezones[newTimezoneID].name);
-		_inst->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, newTimezoneID, 0);
+		if (_pCustomTZHidden != nullptr) {
+			_nSelectedTimeZoneID = String(_pCustomTZHidden->getValue()).toInt();
+			_inst->debugMessage("Timezone select: %s", __timezones[_nSelectedTimeZoneID].name);
+			_inst->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, _nSelectedTimeZoneID, 0);
+		}
 		return true;
 	}
+
+	server.reset();
+	server.end();
+
 	return false;
 }
 

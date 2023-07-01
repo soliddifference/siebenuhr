@@ -235,11 +235,12 @@ bool Controller::initializeWifi(bool enabled) {
 	return true;
 }
 
-bool Controller::initializeNTP(bool enabled) {
+bool Controller::initializeNTP(bool enabled, int timezoneId) {
 	if (_bWifiEnabled && enabled) {
-
-		int newTimezoneID = (int)readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
-		String sTimezone = __timezones[newTimezoneID].name;
+		if (timezoneId == -1) {
+			timezoneId = (int)readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
+		}
+		String sTimezone = __timezones[timezoneId].name;
 		debugMessage(formatString("Timezone (EEPROM) : %s", sTimezone.c_str()));
 
 		setDebug(INFO);
@@ -297,7 +298,7 @@ bool Controller::update() {
 			APController::getInstance()->begin();
 
 			initializeWifi(true);
-			initializeNTP(true);
+			initializeNTP(true, APController::getInstance()->getSelectedTimeZone()); // needed, as EEPROM is probably not yet saved
 		}
 	}
 

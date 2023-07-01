@@ -2,6 +2,7 @@
 #define _7U_APCONTROLLER_H
 
 #include "SiebenUhr.h"
+#include "AsyncWiFiManagerParameterExt.h"
 #include <ESPAsyncWiFiManager.h>
 
 namespace siebenuhr {
@@ -14,7 +15,9 @@ public:
     static APController* getInstance();
 
     bool begin();
+
     void getNetworkInfo();
+    inline int getSelectedTimeZone() { return _nSelectedTimeZoneID; };
 
 private:
     bool setupAPCaptivePortal();
@@ -23,9 +26,13 @@ private:
     void resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager);
 
     static APController* _pInstance;
+    String _sDropDownTimeZoneHTML;
+    AsyncWiFiManagerParameterExt *_pCustomTZDropdown;
+    AsyncWiFiManagerParameter *_pCustomTZHidden;
+
+    int _nSelectedTimeZoneID;
 
     char _sIdentifier[100];
-    bool _bUIConfigured;
 };
 
 }

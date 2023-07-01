@@ -47,7 +47,7 @@ public:
 	bool initializeDebug(bool enabled, int baud=115200, int waitMilliseconds=3000);
 	void initializeEEPROM(bool forceFirstTimeSetup=false);
 	bool initializeWifi(bool enabled);
-	bool initializeNTP(bool enabled);
+	bool initializeNTP(bool enabled, int timezoneId = -1);
 	bool initializeDisplay(DisplayDriver* display);
 
 	void begin();
