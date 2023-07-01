@@ -14,10 +14,9 @@
 
 DisplayDriver::DisplayDriver() : _avgComputionTime(100)
 {
-	_nLastClockUpdate = millis();
+	_nLastUpdate = millis();
 	// _nDisplayEffect = DISPLAY_EFFECT_DAYLIGHT_WHEEL;
-	for (int i = 0; i < 4; ++i)
-	{
+	for (int i = 0; i < 4; ++i) {
 		_glyphs[i] = new Glyph(LEDS_PER_SEGMENT);
 	}
 }
@@ -64,10 +63,12 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_inst->debugMessage("Display setup completed.");
 	_inst->debugMessage("Color          : %d", _solidColor.hue);
 	_inst->debugMessage("Brightness     : %d", _nBrightness);
-	_inst->debugMessage("Timezone Hours : %d", _nTimezone);
 
-	setMessage("7uhr");
 	setPower(true);
+
+	setNotification(String("7uhr").c_str());
+	update();
+	sleep(3000);
 }
 
 void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
@@ -78,7 +79,7 @@ void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 	}
 
 	unsigned long now = millis();
-	if ((now - _nLastClockUpdate) >= DISPLAY_REFRESH_INTERVAL) {
+	if ((now - _nLastUpdate) >= DISPLAY_REFRESH_INTERVAL) {
 	// if(true){
 		unsigned long t_1 = millis();
 
@@ -94,7 +95,7 @@ void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 			updateDisplayAsNotification();
 			break;
 		}
-		_nLastClockUpdate = now;
+		_nLastUpdate = now;
 
 		for(int i=0; i<4; i++) {
 			_glyphs[i]->update_blending_to_next_color();
@@ -137,10 +138,6 @@ void DisplayDriver::updateClock()
 		message[1] = hour() % 10 + '0';
 		message[2] = (int)floor(minute() / 10) + '0';
 		message[3] = minute() % 10 + '0';
-
-
-		// siebenuhr::Controller::getInstance()->debugMessage("... %d", getOperationMode());
-
 		setMessage(message);
 		printCurrentTime();
 		scheduleRedraw();

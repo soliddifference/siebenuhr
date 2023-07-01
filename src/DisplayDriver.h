@@ -84,6 +84,7 @@ private:
 	CRGB *_leds;
 	
 	bool _bNotificationSet = false;
+	uint8_t _nLastUpdate;		 // when was the clock updated the last time
 	uint8_t _nLastClockUpdate;		 // when was the clock updated the last time
 
 	uint8_t _bPower;

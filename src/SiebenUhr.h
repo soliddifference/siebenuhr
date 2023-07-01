@@ -70,7 +70,7 @@ static const uint8_t EEPROM_ADDRESSES[EEPROM_ADDRESS_COUNT] = {
 	EEPROM_ADDRESS_COLOR_WHEEL_ANGLE,
 	EEPROM_ADDRESS_TIMEZONE_HOUR};
 
-static const int BLENDIG_PERIOD = 5000;
+static const int BLENDIG_PERIOD = 500;
 
 static const int RESET_BUTTON = 4;
 static const int FUNCTION_LED = 2;
