@@ -26,7 +26,7 @@ public:
 	void setMessageExt(const struct MessageExt &msg, int fade_interval = BLENDIG_PERIOD);
 
 	void setColor(const struct CHSV &color, bool saveToEEPROM = false);
-	void setNextColor(CHSV color, int interval_ms);
+	void setNextColor(CHSV color, int interval_ms, bool saveToEEPROM = false);
 	struct CHSV getColor();
 
 	void setNotification(String notification, uint32_t milliseconds = 0);

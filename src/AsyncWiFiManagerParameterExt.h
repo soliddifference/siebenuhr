@@ -9,8 +9,6 @@ class AsyncWiFiManagerParameterExt : public AsyncWiFiManagerParameter {
     using AsyncWiFiManagerParameter::AsyncWiFiManagerParameter;
 
 public:
-    // AsyncWiFiManagerParameterExt(const char *custom)
-
     void setCustomHTML(const char *custom) {
         this->_customHTML = custom;
     };

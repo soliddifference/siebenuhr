@@ -60,6 +60,7 @@ public:
 	// configuration
 	inline bool getFirstTimeSetup() { return _bFirstTimeSetup; };
 	inline uint16_t getSerialNumber() { return _nSerialNumber; };
+	CHSV getColor();
 
 	void setResetButton(int buttonResetPin);
 	void setKnob(int knobPinA, int knobPinB, int buttonPin);

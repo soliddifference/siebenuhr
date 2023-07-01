@@ -52,6 +52,9 @@ Controller::Controller() {
 
 	_bFirstTimeSetup = false;
 	_nSerialNumber = 0;
+
+	_nSetupHour = 21;
+	_nSetupMinute = 42;
 }
 
 void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
@@ -105,6 +108,7 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 
 		debugMessage("\nEEPROM setup completed.");
 		debugMessage("SerialNumber   : %d", _nSerialNumber);
+		debugMessage("Timezone       : %d", nTimeZoneID);
 		debugMessage("Timezone       : %s", __timezones[nTimeZoneID].name);
 		debugMessage("Enable WIFI    : %s", useWifi ? "true" : "false");
 	}
@@ -266,6 +270,15 @@ void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
 	_pKnobEncoder = new UIKnob(knobPinA, knobPinB, buttonPin);
 }
 
+CHSV Controller::getColor() {
+	CHSV color;
+	color.h = readFromEEPROM(EEPROM_ADDRESS_H);
+	color.s = readFromEEPROM(EEPROM_ADDRESS_S);
+	color.v = readFromEEPROM(EEPROM_ADDRESS_V);
+	debugMessage("Get EEEPROM Color: %d %d %d", color.h, color.s, color.v);
+	return color;
+}
+
 void Controller::begin() {
 	// config display
 	_pDisplay->setNotification(_cMessage, 3000);
@@ -274,6 +287,7 @@ void Controller::begin() {
 	if (_bNTPEnabled) {
 		setMenu(CONTROLLER_MENU::CLOCK);
 	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
+		_pDisplay->setColor(getColor());
 	} else {
 		setMenu(CONTROLLER_MENU::SET_HOUR);
 	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
@@ -373,10 +387,8 @@ void Controller::setMenu(CONTROLLER_MENU menu) {
 		_pKnobEncoder->setEncoderBoundaries(5, 255, _pDisplay->getBrightness());
 		break;
 	case CONTROLLER_MENU::HUE: 
-		// _pKnobEncoder->setEncoderBoundaries(0, 1000, 0, true);
 		CHSV current_color = _pDisplay->getColor();
 		_pKnobEncoder->setEncoderBoundaries(0, 255, current_color.hue, true);
-		// _pDisplay->setNotification(_sMenu[_nMenuCurPos].message, 2000);
 		break;
 	}
 }
@@ -389,8 +401,7 @@ void Controller::handleMenu() {
 			break;
 		case CONTROLLER_MENU::SET_MINUTE:
 			// show time as normal
-			// _pDisplay->setColor(_pDisplay->getColor());
-			_pDisplay->setNextColor(_pDisplay->getColor(), 5000);
+			_pDisplay->setNextColor(getColor(), 5000);
 		    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 			setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
 			_eState = CONTROLLER_STATE::RUNNING;
@@ -433,8 +444,7 @@ void Controller::handleMenu() {
 				CHSV color = CHSV( pos, 255, 220);
 				debugMessage(formatString("Hue: %d", color.hue));
 				_pDisplay->setColor(color, true /* SAFE TO EEPROM*/);
-
-				_pDisplay->scheduleRedraw(0);
+				// _pDisplay->scheduleRedraw();
 				break;
 			}
 

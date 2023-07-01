@@ -86,7 +86,6 @@ void Glyph::set_next_char(char character, int fade_interval) {
 void Glyph::set_next_color(CRGB color, int fade_interval_ms) {
     color_change_blending_period_started = millis();
     color_change_blending_period = fade_interval_ms;
-    //Serial.println(fade_interval_ms);
     color_base = color_current;
     color_next = color;
 }

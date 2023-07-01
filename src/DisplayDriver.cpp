@@ -138,6 +138,10 @@ void DisplayDriver::updateClock()
 		message[1] = hour() % 10 + '0';
 		message[2] = (int)floor(minute() / 10) + '0';
 		message[3] = minute() % 10 + '0';
+		// message[0] = '8';
+		// message[1] = '8';
+		// message[2] = '8';
+		// message[3] = '8';
 		setMessage(message);
 		printCurrentTime();
 		scheduleRedraw();
@@ -166,6 +170,8 @@ void DisplayDriver::updateClock()
 		printCurrentTime();
 		scheduleRedraw();
 	}
+
+	return;
 
 	// effect section, now we find out HOW to display the content on the display
 	if (checkForRedraw()) {
@@ -326,6 +332,8 @@ int DisplayDriver::isNotificationSet()
 void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 {
 	_solidColor = color;
+	siebenuhr::Controller::getInstance()->debugMessage("Set Color: %d %d %d", _solidColor.hue, _solidColor.sat, _solidColor.val);
+
 	for (int i = 0; i < 4; i++) {
 		_glyphs[i]->set_color(color);
 		_glyphs[i]->set_next_color(color, 0);
@@ -338,10 +346,16 @@ void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 	}
 }
 
-void DisplayDriver::setNextColor(CHSV color, int interval_ms)
+void DisplayDriver::setNextColor(CHSV color, int interval_ms, bool saveToEEPROM)
 {
 	for (int i = 0; i < 4; i++) {
 		_glyphs[i]->set_next_color(color, interval_ms);
+	}
+
+	if (saveToEEPROM) {
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
 	}
 }
 
