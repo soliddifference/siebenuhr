@@ -12,10 +12,6 @@
 
 DisplayDriver Display;
 
-AsyncWebServer server(80);
-DNSServer dns;
-AsyncWiFiManager wifiManager(&server, &dns);
-
 void setup() {
     siebenuhr::Controller *_cntrl = siebenuhr::Controller::getInstance(); // just for convinience
     if (_cntrl == nullptr)
@@ -35,7 +31,7 @@ void setup() {
         return;
     }
 
-    if (!_cntrl->initializeWifi(true, &wifiManager)) {
+    if (!_cntrl->initializeWifi(true)) {
         _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
         _cntrl->debugMessage("7Uhr wifi setup failed.");
         return;

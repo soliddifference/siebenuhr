@@ -46,7 +46,6 @@ Controller::Controller() {
 
 	_cMessage = "7uhr";
 	_pDisplay = nullptr;
-	_pWiFiManager = nullptr;
 
 	_nMenuCurPos = CONTROLLER_MENU::CLOCK;
 	_nMenuLastPosChange = millis();
@@ -95,7 +94,6 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 		writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
 		writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
 		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, 11  /*Europe-Zurich*/, 0);
-		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, 1, 0);
 		writeToEEPROM(EEPROM_ADDRESS_WIFI_ENABLED, 0, 0);
 
 		saveToEEPROM();
@@ -198,25 +196,41 @@ bool Controller::initializeDisplay(DisplayDriver* display) {
 	return true;
 }
 
-bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
-	_pWiFiManager = WiFiManager;
-	if (_pWiFiManager == nullptr) {
-		_strLastErrorDesc = "Failed to setup wifi component.";
-		return false;
-	}
+bool Controller::initializeWifi(bool enabled) {
+	WiFi.setHostname("7uhr");
 
 	if (enabled) {
-		if (_pWiFiManager->autoConnect(5, 1000)) {
-			_bWifiEnabled = enabled;
-			APController::getInstance()->getNetworkInfo();
-		} else {
-			debugMessage("Failed to connect to WIFI....");
+		if (WiFi.status() == WL_CONNECTED) {
+			return true;
 		}
-	} else {
-		WiFi.disconnect();
-  		WiFi.mode(WIFI_OFF);
-		_bWifiEnabled = false;
-	}
+
+		WiFi.mode(WIFI_STA);
+
+		String SSID = EEPROMReadString(EEPROM_ADDRESS_WIFI_SSID, EEPROM_ADDRESS_MAX_LENGTH);
+		String PSWD = EEPROMReadString(EEPROM_ADDRESS_WIFI_PSWD, EEPROM_ADDRESS_MAX_LENGTH);
+
+		if (SSID.length() != 0) {
+			WiFi.begin(SSID.c_str(), PSWD.c_str());
+			debugMessage("Connecting to WiFi (%s)..", SSID);
+			
+			int ConnectRetries = 0;
+			while (WiFi.status() != WL_CONNECTED && ConnectRetries < 5) {
+				ConnectRetries++;
+				debugMessage(".. retry #%d", ConnectRetries);
+				delay(1000);
+			}
+
+			if (WiFi.status() == WL_CONNECTED) {
+				APController::getInstance()->getNetworkInfo();
+				_bWifiEnabled = true;
+				return true;
+			} 
+		}	
+	} 
+
+	WiFi.disconnect();
+	WiFi.mode(WIFI_OFF);
+	_bWifiEnabled = false;
 
 	return true;
 }
@@ -278,13 +292,11 @@ bool Controller::update() {
 		handleMenu();
 
 		if (_pKnobEncoder->getButtonPressTime() >= 5000) {
-		// if (true) {
 			debugMessage("start AP / WIFI setup...");
 			_eState == CONTROLLER_STATE::SETUP_WIFI;
-			// _pDisplay->setNotification("WIFI");
-			APController::getInstance()->begin(_pWiFiManager);
+			APController::getInstance()->begin();
 
-			initializeWifi(true, _pWiFiManager);
+			initializeWifi(true);
 			initializeNTP(true);
 		}
 	}
@@ -318,6 +330,7 @@ bool Controller::update() {
 }
 
 void Controller::handleResetButton() {
+/*	
 	if (_pResetButton->getState()) {
 	    int countdown_int = (5 - (int)(_pResetButton->getTimeSinceStateChange()/1000.f));
 	    if (countdown_int >= 0) {
@@ -339,6 +352,7 @@ void Controller::handleResetButton() {
 			delay(3000);
 	    }
 	} 
+*/	
 }
 
 void Controller::setMenu(CONTROLLER_MENU menu) {

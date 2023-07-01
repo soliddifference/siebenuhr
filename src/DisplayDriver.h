@@ -64,8 +64,8 @@ public:
 	uint8_t getColorWheelAngle();
 	void setColorWheelAngle(uint8_t value, bool saveToEEPROM = true);
 
-	uint8_t getTimezoneHour();
-	void setTimezoneHour(int value, bool saveToEEPROM = true);
+	// uint8_t getTimezoneHour();
+	// void setTimezoneHour(int value, bool saveToEEPROM = true);
 
 	void setNewDefaultTimezone(String inTimezone);
 

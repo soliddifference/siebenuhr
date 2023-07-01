@@ -4,7 +4,6 @@
 #include "SiebenUhr.h"
 
 #include <DisplayDriver.h>
-#include <ESPAsyncWiFiManager.h>
 
 #include "UIButton.h"
 #include "UIKnob.h"
@@ -47,7 +46,7 @@ public:
 	// update and run
 	bool initializeDebug(bool enabled, int baud=115200, int waitMilliseconds=3000);
 	void initializeEEPROM(bool forceFirstTimeSetup=false);
-	bool initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager);
+	bool initializeWifi(bool enabled);
 	bool initializeNTP(bool enabled);
 	bool initializeDisplay(DisplayDriver* display);
 
@@ -108,9 +107,8 @@ private:
 	static UIButton* _pResetButton;
 	static UIKnob* _pKnobEncoder;
 
-	// hardware components
+	// LED Display
 	DisplayDriver* _pDisplay;
-	AsyncWiFiManager* _pWiFiManager;
 
 	// MENU
 	uint8_t _nMenuCurPos;

@@ -13,11 +13,11 @@ public:
 
     static APController* getInstance();
 
-    bool begin(AsyncWiFiManager* pWiFiManager);
+    bool begin();
     void getNetworkInfo();
 
 private:
-    bool setupAPCaptivePortal(AsyncWiFiManager* pWiFiManager);
+    bool setupAPCaptivePortal();
     String buildTimezoneCheckboxOption(int default_tz);
 
     void resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager);

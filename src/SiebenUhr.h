@@ -49,16 +49,13 @@ static const int EEPROM_ADDRESS_BRIGHTNESS = 5;
 static const int EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX = 6;
 static const int EEPROM_ADDRESS_COLOR_WHEEL_ANGLE = 7;
 static const int EEPROM_ADDRESS_TIMEZONE_ID = 8;
-static const int EEPROM_ADDRESS_TIMEZONE_HOUR = 8;
 static const int EEPROM_ADDRESS_WIFI_ENABLED = 9;
-static const int EEPROM_ADDRESS_TIMEZONE_OLSON_STRING = 100;
-/* the length of the TZ string. Currenlty the longest on is 37 chars long
-   (America/Argentina/ComodRivadavia) so 40 should be enough.
-   We should, of course not use this many bytes of the EEPROM after
-   the start to stroe anything else..... */
-static const int EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH = 40;
+static const int EEPROM_ADDRESS_WIFI_SSID = 100;
+static const int EEPROM_ADDRESS_WIFI_PSWD = 200;
 
-static const uint8_t EEPROM_ADDRESS_COUNT = 9;
+static const int EEPROM_ADDRESS_MAX_LENGTH = 40;
+
+static const uint8_t EEPROM_ADDRESS_COUNT = 12;
 static const uint8_t EEPROM_ADDRESSES[EEPROM_ADDRESS_COUNT] = {
 	EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE,
 	EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE,
@@ -68,7 +65,10 @@ static const uint8_t EEPROM_ADDRESSES[EEPROM_ADDRESS_COUNT] = {
 	EEPROM_ADDRESS_BRIGHTNESS,
 	EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX,
 	EEPROM_ADDRESS_COLOR_WHEEL_ANGLE,
-	EEPROM_ADDRESS_TIMEZONE_HOUR};
+	EEPROM_ADDRESS_TIMEZONE_ID,
+	EEPROM_ADDRESS_WIFI_ENABLED,
+	EEPROM_ADDRESS_WIFI_SSID, 
+	EEPROM_ADDRESS_WIFI_PSWD};
 
 static const int BLENDIG_PERIOD = 500;
 
@@ -267,14 +267,12 @@ inline String EEPROMReadString(char eeprom_address, int maxLength)
 
 inline void EEPROMWriteString(char eeprom_address, String data, int maxLength)
 {
-	if (data.equals(EEPROMReadString(eeprom_address, maxLength)))
-	{
+	if (data.equals(EEPROMReadString(eeprom_address, maxLength))) {
 		return;
 	}
 	int _size = data.length();
 	int i;
-	for (i = 0; i < _size || i < maxLength; i++)
-	{
+	for (i = 0; i < _size || i < maxLength; i++) {
 		EEPROM.write(eeprom_address + i, data[i]);
 		delay(10);
 	}

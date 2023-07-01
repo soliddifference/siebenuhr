@@ -28,9 +28,9 @@ APController::APController() {
 	_bUIConfigured = false;
 }
 
-bool APController::begin(AsyncWiFiManager* pWiFiManager) {
+bool APController::begin() {
 	Controller::getInstance()->debugMessage("Starting Access Point...");
-	return setupAPCaptivePortal(pWiFiManager);
+	return setupAPCaptivePortal();
 }
 
 void saveConfigCallback() {
@@ -63,7 +63,7 @@ String APController::buildTimezoneCheckboxOption(int default_tz) {
 	return checkboxTimeZone;
 }
 
-bool APController::setupAPCaptivePortal(AsyncWiFiManager* pWiFiMan) {
+bool APController::setupAPCaptivePortal() {
 	siebenuhr::Controller *_inst = siebenuhr::Controller::getInstance(); // just for convinience
     if (_inst == nullptr)
         return false;
@@ -92,6 +92,15 @@ bool APController::setupAPCaptivePortal(AsyncWiFiManager* pWiFiMan) {
 	wifiManager.addParameter(&custom_tz_dropdown);
 
     if (wifiManager.startConfigPortal(_sIdentifier)) {
+
+  		String ssid = wifiManager.getConfiguredSTASSID();
+		_inst->debugMessage("SSID: %s", ssid.c_str());
+		EEPROMWriteString(EEPROM_ADDRESS_WIFI_SSID, ssid.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+
+		String pwd = wifiManager.getConfiguredSTAPassword();
+		_inst->debugMessage("PSWD: %s", pwd.c_str());
+		EEPROMWriteString(EEPROM_ADDRESS_WIFI_PSWD, pwd.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+
 		int newTimezoneID = String(custom_tz_hidden.getValue()).toInt();
 		_inst->debugMessage("Timezone select: %s", __timezones[newTimezoneID].name);
 		_inst->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, newTimezoneID, 0);
@@ -112,15 +121,13 @@ void APController::getNetworkInfo() {
 		if (_inst == nullptr)
 			return;
 
-		// _cTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
-		// _inst->debugMessage(formatString("Timezone (EEPROM) : %s", _cTimezone.c_str()));
-
-		_inst->debugMessage(formatString("Network connected."));
-		_inst->debugMessage(formatString("SSID              : %s", WiFi.SSID().c_str()));
-		_inst->debugMessage(formatString("BSSID             : %s", WiFi.BSSIDstr().c_str()));
-		_inst->debugMessage(formatString("Gateway IP        : %s", WiFi.gatewayIP().toString().c_str()));
-		_inst->debugMessage(formatString("Subnet Mask       : %s", WiFi.subnetMask().toString().c_str()));
-		_inst->debugMessage(formatString("IP address (DHCP) : %s", WiFi.localIP().toString().c_str()));
-		_inst->debugMessage(formatString("MAC address is    : %s", WiFi.macAddress().c_str()));
+		_inst->debugMessage("Network connected.");
+		_inst->debugMessage("SSID              : %s", WiFi.SSID().c_str());
+		_inst->debugMessage("BSSID             : %s", WiFi.BSSIDstr().c_str());
+		_inst->debugMessage("Gateway IP        : %s", WiFi.gatewayIP().toString().c_str());
+		_inst->debugMessage("Subnet Mask       : %s", WiFi.subnetMask().toString().c_str());
+		_inst->debugMessage("IP address (DHCP) : %s", WiFi.localIP().toString().c_str());
+		_inst->debugMessage("MAC address is    : %s", WiFi.macAddress().c_str());
+		_inst->debugMessage("Hostename         : %s", WiFi.getHostname());
     }
 }
