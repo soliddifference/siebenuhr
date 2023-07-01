@@ -56,7 +56,7 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	setColor(_solidColor);
 	_nBrightness = _inst->readFromEEPROM(EEPROM_ADDRESS_BRIGHTNESS); // todo: what happens here with an initial launch?
 	setBrightness(_nBrightness);
-	setTimezoneHour(_inst->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR));
+	// setTimezoneHour(_inst->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR));
 	_nColorWheelAngle = _inst->readFromEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE);
 	_nDisplayEffect = _inst->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
 
@@ -66,9 +66,9 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 
 	setPower(true);
 
+	setColor(DEFAULT_COLOR);
 	setNotification(String("7uhr").c_str());
 	update(false, false);
-	sleep(3000);
 }
 
 void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
@@ -450,24 +450,6 @@ void DisplayDriver::setBrightness(int value, bool saveToEEPROM) {
 
 	_nBrightness = value;
 	FastLED.setBrightness(_nBrightness);
-}
-
-/*
-Geters and setters for the timezone hour delta
-*/
-
-uint8_t DisplayDriver::getTimezoneHour()
-{
-	return _nTimezone;
-}
-
-void DisplayDriver::setTimezoneHour(int value, bool saveToEEPROM)
-{
-	_nTimezone = value;
-
-	if (saveToEEPROM) {
-		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR, value);
-	}
 }
 
 void DisplayDriver::setNewDefaultTimezone(String inTimezone)
