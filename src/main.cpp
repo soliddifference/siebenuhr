@@ -35,13 +35,13 @@ void setup() {
         return;
     }
 
-    if (!_cntrl->initializeWifi(false, &wifiManager)) {
+    if (!_cntrl->initializeWifi(true, &wifiManager)) {
         _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
         _cntrl->debugMessage("7Uhr wifi setup failed.");
         return;
     };
 
-    if (!_cntrl->initializeNTP(false)) {
+    if (!_cntrl->initializeNTP(true)) {
         _cntrl->debugMessage(siebenuhr::Controller::getInstance()->getLastErrorDesc());
         _cntrl->debugMessage("7Uhr NTP setup failed.");
         return;

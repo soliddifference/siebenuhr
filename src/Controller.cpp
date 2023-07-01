@@ -206,7 +206,7 @@ bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
 	}
 
 	if (enabled) {
-		if (_pWiFiManager->autoConnect(3, 500)) {
+		if (_pWiFiManager->autoConnect(5, 1000)) {
 			_bWifiEnabled = enabled;
 			APController::getInstance()->getNetworkInfo();
 		} else {
@@ -223,7 +223,9 @@ bool Controller::initializeWifi(bool enabled, AsyncWiFiManager* WiFiManager) {
 
 bool Controller::initializeNTP(bool enabled) {
 	if (_bWifiEnabled && enabled) {
-		String sTimezone = EEPROMReadString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH);
+
+		int newTimezoneID = (int)readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
+		String sTimezone = __timezones[newTimezoneID].name;
 		debugMessage(formatString("Timezone (EEPROM) : %s", sTimezone.c_str()));
 
 		setDebug(INFO);
@@ -279,18 +281,17 @@ bool Controller::update() {
 		// if (true) {
 			debugMessage("start AP / WIFI setup...");
 			_eState == CONTROLLER_STATE::SETUP_WIFI;
-			_pDisplay->setNotification("WIFI");
+			// _pDisplay->setNotification("WIFI");
 			APController::getInstance()->begin(_pWiFiManager);
 
 			initializeWifi(true, _pWiFiManager);
-			// initializeNTP(true);
+			initializeNTP(true);
 		}
 	}
 
 	if (_eState == CONTROLLER_STATE::SETUP_TIME) {
 		MessageExt msg;
 		CHSV highlight = CHSV(140, 255, 220);
-		// CHSV lowlight = _pDisplay->getColor();
 		CHSV lowlight = CHSV(171, 255, 220);
 		msg.message[0] = (int)floor(_nSetupHour / 10) + '0';
 		msg.message[1] = _nSetupHour % 10 + '0';
@@ -373,8 +374,8 @@ void Controller::handleMenu() {
 			break;
 		case CONTROLLER_MENU::SET_MINUTE:
 			// show time as normal
-			_pDisplay->setColor(_pDisplay->getColor());
-
+			// _pDisplay->setColor(_pDisplay->getColor());
+			_pDisplay->setNextColor(_pDisplay->getColor(), 5000);
 		    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 			setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
 			_eState = CONTROLLER_STATE::RUNNING;

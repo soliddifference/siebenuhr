@@ -66,19 +66,20 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_inst->debugMessage("Brightness     : %d", _nBrightness);
 	_inst->debugMessage("Timezone Hours : %d", _nTimezone);
 
+	setMessage("7uhr");
 	setPower(true);
 }
 
 void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 {
 	if (wifiConnected && NTPEnabled) {
-		siebenuhr::Controller::getInstance()->debugMessage("Give the ezTime-lib it's processing cycle.......");
+		// siebenuhr::Controller::getInstance()->debugMessage("Give the ezTime-lib it's processing cycle.......");
 		events(); // give the ezTime-lib it's processing cycle.....
 	}
 
 	unsigned long now = millis();
-	// if ((now - _nLastClockUpdate) >= DISPLAY_REFRESH_INTERVAL) {
-	if(true){
+	if ((now - _nLastClockUpdate) >= DISPLAY_REFRESH_INTERVAL) {
+	// if(true){
 		unsigned long t_1 = millis();
 
 		switch (_nOperationMode)
