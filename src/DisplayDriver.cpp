@@ -170,9 +170,7 @@ void DisplayDriver::updateClock()
 		printCurrentTime();
 		scheduleRedraw();
 	}
-
-	return;
-
+	
 	// effect section, now we find out HOW to display the content on the display
 	if (checkForRedraw()) {
 		switch (_nDisplayEffect) {
