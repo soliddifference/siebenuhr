@@ -11,6 +11,8 @@
 
 #include <WiFi.h>
 
+#include "HomeAssistant.h"
+
 using namespace siebenuhr;
 
 Controller* Controller::_pInstance = nullptr;
@@ -34,6 +36,8 @@ Controller* Controller::getInstance(){
 	return Controller::_pInstance;
 }
 
+
+
 Controller::Controller() {
 	_bDebugEnabled = false;
 	_bEEPROMEnabled = false;
@@ -55,6 +59,7 @@ Controller::Controller() {
 
 	_nSetupHour = 21;
 	_nSetupMinute = 42;
+
 }
 
 void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
@@ -287,12 +292,20 @@ void Controller::begin() {
 	if (_bNTPEnabled) {
 		setMenu(CONTROLLER_MENU::CLOCK);
 	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
+	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
 		_pDisplay->setColor(getColor());
 	} else {
 		setMenu(CONTROLLER_MENU::SET_HOUR);
 	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
 		_eState = CONTROLLER_STATE::SETUP_TIME;
 	}
+	_pHomeAssistant = new HomeAssistant();
+	_pHomeAssistant->setup();
+	_pHomeAssistant->init();
+	_pHomeAssistant->update();
+
+
+
 }
 
 bool Controller::update() {
@@ -335,6 +348,8 @@ bool Controller::update() {
 	}
 
 	_pDisplay->update(_bWifiEnabled, _bNTPEnabled);
+
+	_pHomeAssistant->update();
 
 	// save values to EEPROM (if scheduled)
 	if(_bDeferredSavingToEEPROMScheduled) {
