@@ -74,7 +74,7 @@ void HomeAssistant::onSelectCommand(int8_t index, HASelect* sender)
     sender->setState(index); // report the selected option back to the HA panel
 }
 
-void HomeAssistant::onTextCommand(String text, HAText* sender)
+void HomeAssistant::onTextCommand(String text, HATextExt* sender)
 {
     text = text.substring(0,4);
     sender->setState(text); // report the selected option back to the HA panel
@@ -82,8 +82,6 @@ void HomeAssistant::onTextCommand(String text, HAText* sender)
     
     Serial.println(text);
     Controller::getInstance()->getDisplayDriver()->setNotification(text, 5000);
-
-    //Controller::getInstance()->getDisplayDriver()->setNotification("zapp", 5000);
 }
 
 void HomeAssistant::setup() 
@@ -113,7 +111,7 @@ void HomeAssistant::setup()
     _color_mode->setOptions("Color Wheel;Fixed Color;Random Color"); 
     _color_mode->setIcon("mdi:apple-keyboard-option"); // optional
 
-    _text = new HAText("Notification");
+    _text = new HATextExt("Notification");
     _text->setName("Notification");
     _text->onTextCommand(onTextCommand);
 }

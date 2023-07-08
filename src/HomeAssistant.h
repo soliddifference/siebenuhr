@@ -5,6 +5,8 @@
 #include "SiebenUhr.h"
 
 #include <ArduinoHA.h>
+#include "HATextExt.h"
+
 
 #include <WiFi.h>
 
@@ -26,7 +28,7 @@ public:
   static void onColorTemperatureCommand(uint16_t temperature, HALight* sender);
   static void onRGBColorCommand(HALight::RGBColor color, HALight* sender);
   static void onSelectCommand(int8_t index, HASelect* sender);
-  static void onTextCommand(String text, HAText* sender);
+  static void onTextCommand(String text, HATextExt* sender);
 
   void setup();
   void update();
@@ -38,7 +40,7 @@ private:
     HAMqtt *_mqtt;
     HALight *_light;
     HASelect *_color_mode; 
-    HAText *_text;
+    HATextExt *_text;
 
     IPAddress _iMQTTBrokerIPAddress;
     char _sMQTTBrokerUsername[EEPROM_ADDRESS_MAX_LENGTH];
