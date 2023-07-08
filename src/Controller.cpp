@@ -303,9 +303,6 @@ void Controller::begin() {
 	_pHomeAssistant->setup();
 	_pHomeAssistant->init();
 	_pHomeAssistant->update();
-
-
-
 }
 
 bool Controller::update() {
