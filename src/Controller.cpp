@@ -299,7 +299,7 @@ void Controller::begin() {
 	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
 		_eState = CONTROLLER_STATE::SETUP_TIME;
 	}
-	_pHomeAssistant = new HomeAssistant();
+	_pHomeAssistant = new HomeAssistant(IPAddress(10,0,0,10), "", "");
 	_pHomeAssistant->setup();
 	_pHomeAssistant->init();
 	_pHomeAssistant->update();

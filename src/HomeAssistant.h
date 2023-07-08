@@ -16,13 +16,17 @@ namespace siebenuhr {
 class HomeAssistant {
 
 public:
+  HomeAssistant(IPAddress ipAddress, String mqttBrokerUsername,String mqttBrokerPassword);
   HomeAssistant();
+
   ~HomeAssistant()  = default;
 
   static void onBrightnessCommand(uint8_t brightness, HALight* sender);
   static void onStateCommand(bool state, HALight* sender);
   static void onColorTemperatureCommand(uint16_t temperature, HALight* sender);
   static void onRGBColorCommand(HALight::RGBColor color, HALight* sender);
+  static void onSelectCommand(int8_t index, HASelect* sender);
+  static void onTextCommand(String text, HAText* sender);
 
   void setup();
   void update();
@@ -33,6 +37,13 @@ private:
     HADevice device;
     HAMqtt *_mqtt;
     HALight *_light;
+    HASelect *_color_mode; 
+    HAText *_text;
+
+    IPAddress _iMQTTBrokerIPAddress;
+    char _sMQTTBrokerUsername[EEPROM_ADDRESS_MAX_LENGTH];
+    char _sMQTTBrokerPassword[EEPROM_ADDRESS_MAX_LENGTH];
+
 };
 
 }
