@@ -46,17 +46,17 @@ void Glyph::attach(int glyph_id_in) {
   _glyph_offset = (3-_glyph_id)*SEGMENT_COUNT*LEDS_PER_SEGMENT;
 }
 
-void Glyph::set_color(int r, int g, int b) {
+void Glyph::setColor(int r, int g, int b) {
   color_current.r = r;
   color_current.g = g;
   color_current.b = b;
 }
 
-void Glyph::set_color(const struct CRGB& color) {
+void Glyph::setColor(const struct CRGB& color) {
   color_current = color;
 }
 
-void Glyph::set_color(const struct CHSV& color) {
+void Glyph::setColor(const struct CHSV& color) {
   color_current = color;
 }
 
@@ -83,14 +83,14 @@ void Glyph::set_next_char(char character, int fade_interval) {
     }
 }
 
-void Glyph::set_next_color(CRGB color, int fade_interval_ms) {
+void Glyph::setNextColor(CRGB color, int fade_interval_ms) {
     color_change_blending_period_started = millis();
     color_change_blending_period = fade_interval_ms;
     color_base = color_current;
     color_next = color;
 }
 
-void Glyph::set_next_color(CHSV color, int fade_interval_ms) {
+void Glyph::setNextColor(CHSV color, int fade_interval_ms) {
 
     color_change_blending_period_started = millis();
     color_change_blending_period = fade_interval_ms;

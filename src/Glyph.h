@@ -185,17 +185,17 @@ public:
   void set_next_char(char character = '8', int fade_interval = BLENDIG_PERIOD);
 
   // change to a next base color over time
-  void set_next_color(CRGB color, int fade_interval_ms);
-  void set_next_color(CHSV color, int fade_interval_ms);
+  void setNextColor(CRGB color, int fade_interval_ms);
+  void setNextColor(CHSV color, int fade_interval_ms);
   void update_blending_to_next_color();
   void update_daylight_color();
 
 
   void set_cake(int cake_id);
   void disturb(int duration = 1000);
-  void set_color(int r, int g, int b);
-  void set_color(const struct CRGB& color);
-  void set_color(const struct CHSV& color);
+  void setColor(int r, int g, int b);
+  void setColor(const struct CRGB& color);
+  void setColor(const struct CHSV& color);
 
   void update();
 

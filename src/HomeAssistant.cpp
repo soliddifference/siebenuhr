@@ -18,12 +18,6 @@ HomeAssistant::HomeAssistant(IPAddress ipAddress, String mqttBrokerUsername,Stri
          Serial.println("Address empty!");
     }
 }
-
-
-HomeAssistant::HomeAssistant()
-{
-
-}
   
 void HomeAssistant::onStateCommand(bool state, HALight* sender) {
     //Serial.print("State: ");
@@ -41,13 +35,13 @@ void HomeAssistant::onBrightnessCommand(uint8_t brightness, HALight* sender) {
 }
 
 void HomeAssistant::onRGBColorCommand(HALight::RGBColor color, HALight* sender) {
-    Serial.print("Red: ");
-    Serial.println(color.red);
-    Serial.print("Green: ");
-    Serial.println(color.green);
-    Serial.print("Blue: ");
-    Serial.println(color.blue);
+	siebenuhr::Controller::getInstance()->debugMessage(formatString("Setting RGB color through HA to R:%3d G:%3d B:%3d", color.red, color.green, color.blue));
+    CRGB _newColor;
 
+    _newColor.red   = color.red;
+    _newColor.green = color.green;
+    _newColor.blue  = color.blue;
+    siebenuhr::Controller::getInstance()->getDisplayDriver()->setColor(_newColor);
     sender->setRGBColor(color); // report color back to the Home Assistant
 }
 
@@ -98,24 +92,51 @@ void HomeAssistant::onTextCommand(String text, HATextExt* sender)
 
 bool HomeAssistant::setup() 
 {
-    _mqtt = new HAMqtt(client, device);   
     // Unique ID must be set!
-    byte mac[8];
-    WiFi.macAddress(mac);
-    device.setUniqueId(mac, sizeof(mac));
 
-    device.setName("siebuhr-F2:A3");
-    device.setSoftwareVersion("1.0.0");
-    device.setModel("Siebenuhr");
-    device.setManufacturer("Solid Difference");
+    // FIXME: For some odd reason mqtt / HA doesn't work if we provide the
+    // serial number this way, even I don't spot the difference between manually 
+    // providing it or through the serial number function...
+    // 
+    // uint16_t intserial = siebenuhr::Controller::getInstance()->getSerialNumber();
+    // Serial.print("Serial: ");
+    // Serial.println(intserial);
+
+    // const char* d = "30279";
+
+    // const uint16_t serial = 30279;
+    // char buffer[16];  // Adjust the buffer size as per your requirements
+    // sprintf(buffer, "%hu", serial);
+    // const char* charPtr = buffer;
+
+
+    // Serial.print("Serial: ");
+    // Serial.print(strlen(charPtr));
+    // Serial.print(" ");
+    // Serial.println(charPtr);
+    // Serial.print("Serial: ");
+    // Serial.print(strlen(d));
+    // Serial.print(" ");
+    // Serial.println(d);
+
+    const char* _serial = "30279";
+
+    _haDevice = new HADevice(_serial);
+    _mqtt = new HAMqtt(client, *_haDevice);   
+
+    _haDevice->setName("siebuhr-30279");
+    _haDevice->setSoftwareVersion("1.0.0");
+    _haDevice->setModel("Siebenuhr");
+    _haDevice->setManufacturer("Solid Difference");
 
     _mqtt->begin(_iMQTTBrokerIPAddress, _sMQTTBrokerUsername, _sMQTTBrokerPassword);
 
-    _light = new HALight("siebenuhr-0001", HALight::BrightnessFeature | HALight::RGBFeature);
-    _light->setName("siebenuhr-0001");
+    _light = new HALight("siebenuhr", HALight::BrightnessFeature | HALight::RGBFeature);
+   
+    _light->setName("siebenuhr");
     _light->onStateCommand(onStateCommand);
-    _light->onBrightnessCommand(onBrightnessCommand); // optional
-    _light->onRGBColorCommand(onRGBColorCommand); // optional
+    _light->onBrightnessCommand(onBrightnessCommand); 
+    _light->onRGBColorCommand(onRGBColorCommand); 
     
     _color_mode = new HASelect("SiebenuhrColorMode");
     _color_mode->setName("SiebenuhrColorMode"); // optional

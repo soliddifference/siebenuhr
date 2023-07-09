@@ -247,8 +247,8 @@ void DisplayDriver::setMessageExt(const struct MessageExt &msg, int fade_interva
 	for (int i = 0; i < 4; i++) {
 		_currentMessage[i] = msg.message[i];
 		_glyphs[i]->set_next_char(msg.message[i], fade_interval);
-		_glyphs[i]->set_color(msg.color[i]);
-		_glyphs[i]->set_next_color(msg.color[i], 0);
+		_glyphs[i]->setColor(msg.color[i]);
+		_glyphs[i]->setNextColor(msg.color[i], 0);
 	}
 }
 
@@ -321,7 +321,7 @@ int DisplayDriver::isNotificationSet()
 
 /**************************************************************************/
 /*
-		set_color
+		setColor
 
 		Low level routine to set a new color for all 4 glyphs.
 */
@@ -333,8 +333,8 @@ void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 	siebenuhr::Controller::getInstance()->debugMessage("Set Color: %d %d %d", _solidColor.hue, _solidColor.sat, _solidColor.val);
 
 	for (int i = 0; i < 4; i++) {
-		_glyphs[i]->set_color(color);
-		_glyphs[i]->set_next_color(color, 0);
+		_glyphs[i]->setColor(color);
+		_glyphs[i]->setNextColor(color, 0);
 	}
 
 	if (saveToEEPROM) {
@@ -342,12 +342,17 @@ void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
 		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
 	}
+}
+
+void DisplayDriver::setColor(const struct CRGB &color, bool saveToEEPROM) {
+	CHSV _hsvColor = rgb2hsv_approximate(color);
+	setColor(_hsvColor, saveToEEPROM);
 }
 
 void DisplayDriver::setNextColor(CHSV color, int interval_ms, bool saveToEEPROM)
 {
 	for (int i = 0; i < 4; i++) {
-		_glyphs[i]->set_next_color(color, interval_ms);
+		_glyphs[i]->setNextColor(color, interval_ms);
 	}
 
 	if (saveToEEPROM) {
@@ -357,9 +362,21 @@ void DisplayDriver::setNextColor(CHSV color, int interval_ms, bool saveToEEPROM)
 	}
 }
 
+void DisplayDriver::setNextColor(CRGB color, int interval_ms, bool saveToEEPROM) {
+	CHSV _hsvColor = rgb2hsv_approximate(color);
+	setNextColor(_hsvColor, interval_ms, saveToEEPROM);
+}
+
 CHSV DisplayDriver::getColor()
 {
 	return _solidColor;
+}
+
+CRGB DisplayDriver::getColorRGB()
+{
+	CRGB _rgbColor; 
+	hsv2rgb_rainbow(_solidColor, _rgbColor );
+	return _rgbColor;
 }
 
 uint8_t DisplayDriver::getPower()

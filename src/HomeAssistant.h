@@ -8,6 +8,7 @@
 #include "HATextExt.h"
 
 
+
 #include <WiFi.h>
 
 #include "DisplayDriver.h"
@@ -19,7 +20,6 @@ class HomeAssistant {
 
 public:
   HomeAssistant(IPAddress ipAddress, String mqttBrokerUsername,String mqttBrokerPassword);
-  HomeAssistant();
 
   ~HomeAssistant()  = default;
 
@@ -35,7 +35,7 @@ public:
 
 private:
     WiFiClient client;
-    HADevice device;
+    HADevice *_haDevice;
     HAMqtt *_mqtt;
     HALight *_light;
     HASelect *_color_mode; 
@@ -44,7 +44,6 @@ private:
     IPAddress _iMQTTBrokerIPAddress;
     char _sMQTTBrokerUsername[EEPROM_ADDRESS_MAX_LENGTH];
     char _sMQTTBrokerPassword[EEPROM_ADDRESS_MAX_LENGTH];
-
 };
 
 }

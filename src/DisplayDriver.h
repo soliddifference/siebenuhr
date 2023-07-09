@@ -29,6 +29,10 @@ public:
 	void setNextColor(CHSV color, int interval_ms, bool saveToEEPROM = false);
 	struct CHSV getColor();
 
+	void setColor(const struct CRGB &color, bool saveToEEPROM = false);
+	void setNextColor(CRGB color, int interval_ms, bool saveToEEPROM = false);
+	struct CRGB getColorRGB();
+
 	void setNotification(String notification, uint32_t milliseconds = 0);
 	void setNotification(const char* notification, uint32_t milliseconds = 0);
 	void setNotification(char notification[4], uint32_t milliseconds = 0);

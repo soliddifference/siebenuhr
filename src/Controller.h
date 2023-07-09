@@ -78,6 +78,7 @@ public:
 	void debugValue(const char *key, const int value);
 
 	inline DisplayDriver* getDisplayDriver() { return _pDisplay; }
+	inline HomeAssistant* getHomeAssistant() { return _pHomeAssistant; }
 
 private:
 	Controller();
