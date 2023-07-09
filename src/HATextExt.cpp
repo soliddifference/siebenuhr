@@ -5,6 +5,7 @@
 #include <utils/HASerializer.h>
 
 const char HAComponentText[] PROGMEM = {"text"};
+const char HATextStateNone[] PROGMEM = {""};
 
 HATextExt::HATextExt(const char* uniqueId) :
     HABaseDeviceType(AHATOFSTR(HAComponentText), uniqueId),
@@ -138,7 +139,7 @@ bool HATextExt::publishState(const String state)
     if (state.length() == 0) {
         return publishOnDataTopic(
             AHATOFSTR(HAStateTopic),
-            AHATOFSTR(HAStateNone),
+            AHATOFSTR(HATextStateNone),
             true
         );
     }
@@ -163,7 +164,7 @@ void HATextExt::handleCommand(const uint8_t* cmd, const uint16_t length)
         return;
     }
 
-    if (memcmp_P(cmd, HAStateNone, length) == 0) {
+    if (memcmp_P(cmd, HATextStateNone, length) == 0) {
         _commandTextCallback(String(), this);
         
     } else {

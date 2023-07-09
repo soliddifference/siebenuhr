@@ -107,7 +107,9 @@ void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 			}
 		}
 
-		FastLED.show();
+		if(_bPower) { FastLED.show(); }
+		else 		{ FastLED.clear(true); } // disable the leds if power is set to off
+
 
 		_avgComputionTime.addValue(millis() - t_1);
 		_nComputionTimeUpdateCount++;
@@ -329,8 +331,7 @@ int DisplayDriver::isNotificationSet()
 
 void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 {
-	_solidColor = color;
-	siebenuhr::Controller::getInstance()->debugMessage("Set Color: %d %d %d", _solidColor.hue, _solidColor.sat, _solidColor.val);
+	siebenuhr::Controller::getInstance()->debugMessage("Set Color: %d %d %d", color.hue, color.sat, color.val);
 
 	for (int i = 0; i < 4; i++) {
 		_glyphs[i]->setColor(color);
@@ -388,11 +389,16 @@ void DisplayDriver::setPower(bool power)
 {
 	_bPower = power;
 	if (_bPower) {
-		_solidColor = _solidColorBeforeShutdown;
-		setColor(_solidColor);
+		 if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
+		 	_solidColor = _solidColorBeforeShutdown;
+			setColor(_solidColor);
+		 }
+		 scheduleRedraw();
 	}
 	else {
-		_solidColorBeforeShutdown = _solidColor;
+		 if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
+		 	_solidColorBeforeShutdown = _solidColor;
+		 }
 		setColor(CHSV(0, 0, 0));
 	}
 }

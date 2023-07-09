@@ -293,7 +293,7 @@ void Controller::begin() {
 	if (_bNTPEnabled) {
 		setMenu(CONTROLLER_MENU::CLOCK);
 	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
-	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
+	   //_pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
 		_pDisplay->setColor(getColor());
 	} else {
 		setMenu(CONTROLLER_MENU::SET_HOUR);

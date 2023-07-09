@@ -20,16 +20,19 @@ HomeAssistant::HomeAssistant(IPAddress ipAddress, String mqttBrokerUsername,Stri
 }
   
 void HomeAssistant::onStateCommand(bool state, HALight* sender) {
+    siebenuhr::Controller::getInstance()->debugMessage(formatString("Turning Siebenuhr through HA to %3d", state));
+
     //Serial.print("State: ");
     //Serial.println(state);
     // FIXME: We still need to implement an 'Off' mode for the clock which should be triggered from here
-    // Controller::getInstance()->getDisplayDriver()->setPower(state);
+    //if(!state) {
+    Controller::getInstance()->getDisplayDriver()->setPower(state);
+    //}
     sender->setState(state); // report state back to the Home Assistant
 }
 
 void HomeAssistant::onBrightnessCommand(uint8_t brightness, HALight* sender) {
-    Serial.print("Brightness: ");
-    Serial.println(brightness);
+    siebenuhr::Controller::getInstance()->debugMessage(formatString("Setting brightness through HA to %3d", brightness));
     Controller::getInstance()->getDisplayDriver()->setBrightness(brightness);
     sender->setBrightness(brightness); // report brightness back to the Home Assistant
 }
@@ -37,7 +40,6 @@ void HomeAssistant::onBrightnessCommand(uint8_t brightness, HALight* sender) {
 void HomeAssistant::onRGBColorCommand(HALight::RGBColor color, HALight* sender) {
 	siebenuhr::Controller::getInstance()->debugMessage(formatString("Setting RGB color through HA to R:%3d G:%3d B:%3d", color.red, color.green, color.blue));
     CRGB _newColor;
-
     _newColor.red   = color.red;
     _newColor.green = color.green;
     _newColor.blue  = color.blue;
@@ -84,9 +86,11 @@ void HomeAssistant::onTextCommand(String text, HATextExt* sender)
 {
     text = text.substring(0,4);
     sender->setState(text); // report the selected option back to the HA panel
-    Serial.print("Text changed to: ");
+
+    sender->setState(""); // report the selected option back to the HA panel
+    //Serial.print("Text changed to: ");
     
-    Serial.println(text);
+    //Serial.println(text);
     Controller::getInstance()->getDisplayDriver()->setNotification(text, 5000);
 }
 
@@ -154,7 +158,7 @@ bool HomeAssistant::setup()
     _light->setState(1);
     _light->setBrightness(Controller::getInstance()->getDisplayDriver()->getBrightness());
     
-    _color_mode->setState(1);
+    _color_mode->setState(Controller::getInstance()->getDisplayDriver()->getDisplayEffect());
 
     return _mqtt->isConnected(); 
 }
