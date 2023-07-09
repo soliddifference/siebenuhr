@@ -301,9 +301,23 @@ void Controller::begin() {
 		_eState = CONTROLLER_STATE::SETUP_TIME;
 	}
 
-	IPAddress _mqttIP = IPAddress(0,0,0,0);
-	String _mqttUsername = "";
-	String _mqttPassword = "";
+
+	IPAddress _mqttIP;    
+    String _mqttUsername; 
+	String _mqttPassword; 
+
+	// FIXME: To be removed, onve the captive portal supplies us with the credentials.
+	// FIRST TIME MANUAL WRITING INTO ROM FOR MQTT VIA CODE
+	// _mqttIP = IPAddress(0,0,0,0);
+	// _mqttUsername = "";
+	// _mqttPassword = "";
+	// EEPROMWriteString(EEPROM_ADDRESS_HA_MQTT_IP,_mqttIP.toString(),20);
+	// EEPROMWriteString(EEPROM_ADDRESS_HA_MQTT_USERNAME,_mqttUsername,40);
+	// EEPROMWriteString(EEPROM_ADDRESS_HA_MQTT_PASSWORD,_mqttPassword,40);
+
+	_mqttIP.fromString(EEPROMReadString(EEPROM_ADDRESS_HA_MQTT_IP, 20));
+	_mqttUsername = EEPROMReadString(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
+	_mqttPassword = EEPROMReadString(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
 
 	_pHomeAssistant = new HomeAssistant(_mqttIP, _mqttUsername, _mqttPassword);
 	if (!_pHomeAssistant->setup()) {
