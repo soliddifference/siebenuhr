@@ -8,18 +8,18 @@
 #include "Glyph.h"
 
 Glyph::Glyph(int leds_per_segment) :
-      glyph_next(new int[SEGMENT_COUNT*leds_per_segment]),
-      glyph_current(new int[SEGMENT_COUNT*leds_per_segment]),
-      _leds(new CRGB[SEGMENT_COUNT*leds_per_segment]),
-      _leds_char(new CRGB[SEGMENT_COUNT*leds_per_segment]),
-      _leds_effect(new CRGB[SEGMENT_COUNT*leds_per_segment]),
-      LEDS_PER_SEGMENT(leds_per_segment),
-      _effect_mapper_vertical(new CRGB[2*leds_per_segment+3]) {
-   //constructor
-   last_update = millis();
-   // total leds per glyph
-   NUM_LEDS = SEGMENT_COUNT * leds_per_segment;
-}
+  glyph_next(new int[SEGMENT_COUNT*leds_per_segment]),
+  glyph_current(new int[SEGMENT_COUNT*leds_per_segment]),
+  _leds(new CRGB[SEGMENT_COUNT*leds_per_segment]),
+  _leds_char(new CRGB[SEGMENT_COUNT*leds_per_segment]),
+  _leds_effect(new CRGB[SEGMENT_COUNT*leds_per_segment]),
+  LEDS_PER_SEGMENT(leds_per_segment),
+  _effect_mapper_vertical(new CRGB[2*leds_per_segment+3]) {
+    //constructor
+    last_update = millis();
+     // total leds per glyph
+    NUM_LEDS = SEGMENT_COUNT * leds_per_segment;
+  }
 
 Glyph::~Glyph () {
   // destructor
@@ -129,9 +129,9 @@ void Glyph::update() {
       _leds_char[i].r = lerp8by8(glyph_current[i]*color_current.r, glyph_next[i]*color_current.r, itterator );
       _leds_char[i].g = lerp8by8(glyph_current[i]*color_current.g, glyph_next[i]*color_current.g, itterator );
       _leds_char[i].b = lerp8by8(glyph_current[i]*color_current.b, glyph_next[i]*color_current.b, itterator );
-      // if (i==6*LEDS_PER_SEGMENT+2 && _glyph_id == 1 ) {
-      //   debugColor(_leds_char[i]);
-      // }
+      if (i==6*LEDS_PER_SEGMENT+2 && _glyph_id == 1 ) {
+        debugColor(_leds_char[i]);
+      }
     }
   }
   else {

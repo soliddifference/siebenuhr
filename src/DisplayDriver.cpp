@@ -52,8 +52,11 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 		_solidColor = DEFAULT_COLOR;
 	}
 
-	_solidColorBeforeShutdown = _solidColor;
-	setColor(_solidColor);
+	if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
+		_solidColorBeforeShutdown = _solidColor;
+	   	setColor(_solidColor);
+		_inst->debugMessage("Setting solid color.");
+	}
 	_nBrightness = _inst->readFromEEPROM(EEPROM_ADDRESS_BRIGHTNESS); // todo: what happens here with an initial launch?
 	setBrightness(_nBrightness);
 	// setTimezoneHour(_inst->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_HOUR));
@@ -61,13 +64,13 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_nDisplayEffect = _inst->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
 
 	_inst->debugMessage("Display setup completed.");
-	_inst->debugMessage("Color          : %d", _solidColor.hue);
+	_inst->debugMessage("Color          : %d", _colorCurrent.hue);
 	_inst->debugMessage("Brightness     : %d", _nBrightness);
 
 	setPower(true);
 
 	setColor(DEFAULT_COLOR);
-	setNotification(String("7uhr").c_str());
+	setNotification(String("7uhr").c_str(), 1000);
 	update(false, false);
 }
 
@@ -283,7 +286,9 @@ void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 		_nOperationModeBeforeNotification = _nOperationMode;
 		strncpy(_messageBeforeNotification, _currentMessage, 4);
 		// siebenuhr::Controller::getInstance()->debugMessage("new notification color: %d", _solidColor.hue);
-		_solidColorBeforeNotification = _solidColor;
+		if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
+			_solidColorBeforeNotification = _solidColor;
+		}
 	}
 
 	_nOperationMode = OPERATION_MODE_MESSAGE;
@@ -295,8 +300,8 @@ void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 		_nDisplayNotificationUntil = 0;
 	}
 
-	// setColor(NOTIFICATION_COLOR);
-	setNextColor(NOTIFICATION_COLOR, 1);
+	//setColor(DEFAULT_COLOR);
+	setNextColor(NOTIFICATION_COLOR,0);
 	setMessage(notification, 0);
 }
 
@@ -309,7 +314,9 @@ void DisplayDriver::disableNotification()
 		_nOperationMode = _nOperationModeBeforeNotification;
 		strncpy(_currentMessage, _messageBeforeNotification, 4);
 		_bNotificationSet = false;
-		setColor(_solidColorBeforeNotification, false);
+		if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
+			setColor(_solidColorBeforeNotification, false);
+		}
 	}
 
 	// force the clock to update on the next cycle
@@ -331,6 +338,7 @@ int DisplayDriver::isNotificationSet()
 
 void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
 {
+	_colorCurrent = color;
 	siebenuhr::Controller::getInstance()->debugMessage("Set Color: %d %d %d", color.hue, color.sat, color.val);
 
 	for (int i = 0; i < 4; i++) {
@@ -370,7 +378,7 @@ void DisplayDriver::setNextColor(CRGB color, int interval_ms, bool saveToEEPROM)
 
 CHSV DisplayDriver::getColor()
 {
-	return _solidColor;
+	return _colorCurrent;
 }
 
 CRGB DisplayDriver::getColorRGB()
@@ -572,7 +580,7 @@ void DisplayDriver::scheduleRedraw(int blending_period)
 
 /**************************************************************************/
 /*
-		check if we hould blend with a special blending period and if yes, return
+		check if we should blend with a special blending period and if yes, return
 		and reset it. Otherwise return BLENDIG_PERIOD (the default)
 */
 /**************************************************************************/

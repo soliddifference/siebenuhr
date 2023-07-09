@@ -224,10 +224,10 @@ bool Controller::initializeWifi(bool enabled) {
 			debugMessage("Connecting to WiFi (%s)..", SSID);
 			
 			int ConnectRetries = 0;
-			while (WiFi.status() != WL_CONNECTED && ConnectRetries < 5) {
+			while (WiFi.status() != WL_CONNECTED && ConnectRetries < 50) {
 				ConnectRetries++;
 				debugMessage(".. retry #%d", ConnectRetries);
-				delay(1000);
+				delay(200);
 			}
 
 			if (WiFi.status() == WL_CONNECTED) {
@@ -293,7 +293,7 @@ void Controller::begin() {
 	if (_bNTPEnabled) {
 		setMenu(CONTROLLER_MENU::CLOCK);
 	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
-	   //_pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
+	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
 		_pDisplay->setColor(getColor());
 	} else {
 		setMenu(CONTROLLER_MENU::SET_HOUR);

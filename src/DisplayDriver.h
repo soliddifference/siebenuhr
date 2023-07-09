@@ -108,7 +108,8 @@ private:
 			"Clock (hours)", "Clock (minutes)", "Message", "Progress Bar Bottom", "Progress Bar Complete"};
 	uint8_t _operation_mode_count = 5;
 
-	struct CHSV _solidColor;
+	struct CHSV _colorCurrent; // this is the current color of the clock
+	struct CHSV _solidColor; // this is thecolor, if the clock is set to a solid color. It's NOT the current color
 	uint8_t _nHue = 0; // rotating "base color" used by many of the display effects
 	uint16_t _nHueSpeed = 20;
 	uint16_t _nHueSpeedPrev = 0; // will store last time LED was updated
