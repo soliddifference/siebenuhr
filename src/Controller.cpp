@@ -301,7 +301,6 @@ void Controller::begin() {
 		_eState = CONTROLLER_STATE::SETUP_TIME;
 	}
 
-
 	IPAddress _mqttIP;    
     String _mqttUsername; 
 	String _mqttPassword; 

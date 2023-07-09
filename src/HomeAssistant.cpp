@@ -55,15 +55,27 @@ void HomeAssistant::onSelectCommand(int8_t index, HASelect* sender)
 {
     switch (index) {
     case 0:
-        // Option "Low" was selected
+        // Option "Color Wheel" was selected
+        siebenuhr::Controller::getInstance()->debugMessage("Display effect switched to Color Wheel");
+        if(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect()!=DISPLAY_EFFECT_DAYLIGHT_WHEEL) {
+            siebenuhr::Controller::getInstance()->getDisplayDriver()->setDisplayEffect(DISPLAY_EFFECT_DAYLIGHT_WHEEL);
+        };
         break;
 
     case 1:
-        // Option "Medium" was selected
+        // Option "Fixed color" was selected
+        siebenuhr::Controller::getInstance()->debugMessage("Display effect switched to Fixed Color");
+        if(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect()!=DISPLAY_EFFECT_SOLID_COLOR) {
+            siebenuhr::Controller::getInstance()->getDisplayDriver()->setDisplayEffect(DISPLAY_EFFECT_SOLID_COLOR);
+        };
         break;
 
     case 2:
-        // Option "High" was selected
+        // Option "Random Color" was selected
+        siebenuhr::Controller::getInstance()->debugMessage("Display effect switched to Random Color");
+        if(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect()!=DISPLAY_EFFECT_RANDOM_COLOR) {
+            siebenuhr::Controller::getInstance()->getDisplayDriver()->setDisplayEffect(DISPLAY_EFFECT_RANDOM_COLOR);
+        };
         break;
 
     default:
@@ -71,7 +83,7 @@ void HomeAssistant::onSelectCommand(int8_t index, HASelect* sender)
         return;
     }
 
-    sender->setState(index); // report the selected option back to the HA panel
+    sender->setState(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect()); // report the selected option back to the HA panel
 }
 
 void HomeAssistant::onTextCommand(String text, HATextExt* sender)
@@ -109,6 +121,7 @@ bool HomeAssistant::setup()
     _color_mode->setName("SiebenuhrColorMode"); // optional
     _color_mode->onCommand(onSelectCommand);
     _color_mode->setOptions("Color Wheel;Fixed Color;Random Color"); 
+    _color_mode->setCurrentState(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect());
     _color_mode->setIcon("mdi:apple-keyboard-option"); // optional
 
     _text = new HATextExt("Notification");
@@ -122,16 +135,10 @@ bool HomeAssistant::setup()
     
     _color_mode->setState(1);
 
-    return _mqtt->isConnected();
-    // //_text->setState("a");
-    // for(int i=0; i<3; i++) {
-    //     Serial.println(_mqtt->isConnected());
-    //     sleep(1);
-    // }   
+    return _mqtt->isConnected(); 
 }
 
 void HomeAssistant::update() 
 {
     _mqtt->loop();
-
 }

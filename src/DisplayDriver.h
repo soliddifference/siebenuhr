@@ -48,8 +48,8 @@ public:
 	/* set and get the current display effect of the clock. The display effect
 		 defines, _how_things are displayed on the clockmode in contrast to the
 		 operations mode that defines _what_ is being displayed */
-	void set_display_effect(uint8_t value);
-	uint8_t get_display_effect();
+	void setDisplayEffect(uint8_t value);
+	uint8_t getDisplayEffect();
 	void adjust_and_save_new_display_effect(bool up);
 	String get_display_effect_json();
 	const char *get_display_effect_short();

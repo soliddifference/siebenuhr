@@ -380,7 +380,7 @@ void DisplayDriver::setPower(bool power)
 	}
 }
 
-void DisplayDriver::set_display_effect(uint8_t value)
+void DisplayDriver::setDisplayEffect(uint8_t value)
 {
 	// don't wrap around at the ends
 	if (value < 0)
@@ -391,19 +391,19 @@ void DisplayDriver::set_display_effect(uint8_t value)
 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, _nDisplayEffect, 30000);
 }
 
-uint8_t DisplayDriver::get_display_effect()
+uint8_t DisplayDriver::getDisplayEffect()
 {
 	return _nDisplayEffect;
 }
 
-String DisplayDriver::get_display_effect_json()
-{
-	String json = "{";
-	json += "\"index\":" + String(_nDisplayEffect);
-	json += ",\"name\":\"" + String(_display_effects[_nDisplayEffect]) + "\"";
-	json += "}";
-	return json;
-}
+// String DisplayDriver::get_display_effect_json()
+// {
+// 	String json = "{";
+// 	json += "\"index\":" + String(_nDisplayEffect);
+// 	json += ",\"name\":\"" + String(_display_effects[_nDisplayEffect]) + "\"";
+// 	json += "}";
+// 	return json;
+// }
 
 const char *DisplayDriver::get_display_effect_short()
 {
@@ -433,7 +433,7 @@ void DisplayDriver::setOperationMode(uint8_t mode)
 {
 	_nOperationMode = mode;
 	if (mode == OPERATION_MODE_PHOTO_SHOOTING) {
-		set_display_effect(DISPLAY_EFFECT_SOLID_COLOR);
+		setDisplayEffect(DISPLAY_EFFECT_SOLID_COLOR);
 	}
 }
 
