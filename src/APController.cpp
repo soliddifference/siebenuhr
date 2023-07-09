@@ -94,7 +94,7 @@ bool APController::setupAPCaptivePortal() {
 		_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
 		_pCustomTZDropdown->setCustomHTML(_sDropDownTimeZoneHTML.c_str());
 	}
-
+	
     if (wifiManager.startConfigPortal(_sIdentifier)) {
 
   		String ssid = wifiManager.getConfiguredSTASSID();

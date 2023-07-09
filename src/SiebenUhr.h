@@ -50,8 +50,8 @@ static const int EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX = 6;
 static const int EEPROM_ADDRESS_COLOR_WHEEL_ANGLE = 7;
 static const int EEPROM_ADDRESS_TIMEZONE_ID = 8;
 static const int EEPROM_ADDRESS_WIFI_ENABLED = 9;
-static const int EEPROM_ADDRESS_WIFI_SSID = 100;
-static const int EEPROM_ADDRESS_WIFI_PSWD = 200;
+static const int EEPROM_ADDRESS_WIFI_SSID = 20;
+static const int EEPROM_ADDRESS_WIFI_PSWD = 60;
 
 static const int EEPROM_ADDRESS_MAX_LENGTH = 40;
 

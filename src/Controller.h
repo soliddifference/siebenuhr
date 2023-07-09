@@ -8,6 +8,8 @@
 #include "UIButton.h"
 #include "UIKnob.h"
 
+#include "HomeAssistant.h"
+
 namespace siebenuhr {
 
 enum CONTROLLER_STATE {
@@ -75,6 +77,8 @@ public:
 	void debugMessage(const char *format, ...);
 	void debugValue(const char *key, const int value);
 
+	inline DisplayDriver* getDisplayDriver() { return _pDisplay; }
+
 private:
 	Controller();
 
@@ -117,6 +121,10 @@ private:
 
 	String _cMessage;
 	static Controller* _pInstance;
+
+	HomeAssistant* _pHomeAssistant;
+
+
 };
 
 }

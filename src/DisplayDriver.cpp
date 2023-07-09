@@ -564,6 +564,7 @@ int DisplayDriver::getSpecialBlendingPeriod()
 	return BLENDIG_PERIOD;
 }
 
+
 String DisplayDriver::getStatus()
 {
 	String json = "{";
