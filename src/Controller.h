@@ -122,6 +122,7 @@ private:
 	String _cMessage;
 	static Controller* _pInstance;
 
+	// Home Assistant MQTT-client
 	HomeAssistant* _pHomeAssistant;
 
 

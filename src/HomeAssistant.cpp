@@ -84,7 +84,7 @@ void HomeAssistant::onTextCommand(String text, HATextExt* sender)
     Controller::getInstance()->getDisplayDriver()->setNotification(text, 5000);
 }
 
-void HomeAssistant::setup() 
+bool HomeAssistant::setup() 
 {
     _mqtt = new HAMqtt(client, device);   
     // Unique ID must be set!
@@ -114,23 +114,21 @@ void HomeAssistant::setup()
     _text = new HATextExt("Notification");
     _text->setName("Notification");
     _text->onTextCommand(onTextCommand);
-}
 
-void HomeAssistant::init() {
+    // setup complete, let's start the mqtt-client
     _mqtt->loop();
     _light->setState(1);
     _light->setBrightness(Controller::getInstance()->getDisplayDriver()->getBrightness());
     
     _color_mode->setState(1);
 
-    //_text->setState("a");
-    for(int i=0; i<3; i++) {
-        Serial.println(_mqtt->isConnected());
-        sleep(1);
-    }    
+    return _mqtt->isConnected();
+    // //_text->setState("a");
+    // for(int i=0; i<3; i++) {
+    //     Serial.println(_mqtt->isConnected());
+    //     sleep(1);
+    // }   
 }
-
-
 
 void HomeAssistant::update() 
 {

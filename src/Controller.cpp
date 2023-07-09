@@ -18,6 +18,7 @@ using namespace siebenuhr;
 Controller* Controller::_pInstance = nullptr;
 UIButton* Controller::_pResetButton = nullptr;
 UIKnob* Controller::_pKnobEncoder = nullptr;
+//HomeAssistant* Controller::_pHomeAssistant = nullptr;
 
 const ControllerMenu_t Controller::_sMenu[Controller::_nMenuMaxEntries] = {
 		{CONTROLLER_MENU::CLOCK, "Display Clock", "CLCK"},
@@ -299,10 +300,21 @@ void Controller::begin() {
 	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
 		_eState = CONTROLLER_STATE::SETUP_TIME;
 	}
-	_pHomeAssistant = new HomeAssistant(IPAddress(0,0,0,0), "", "");
-	_pHomeAssistant->setup();
-	_pHomeAssistant->init();
-	_pHomeAssistant->update();
+
+	IPAddress _mqttIP = IPAddress(0,0,0,0);
+	String _mqttUsername = "";
+	String _mqttPassword = "";
+
+	_pHomeAssistant = new HomeAssistant(_mqttIP, _mqttUsername, _mqttPassword);
+	if (!_pHomeAssistant->setup()) {
+		delete _pHomeAssistant;
+		_pHomeAssistant = nullptr;
+		debugMessage(formatString("WARNING: MQTT client could NOT connect to IP %s", _mqttIP.toString()));
+	}
+	else {
+		debugMessage(formatString("MQTT client successfully connected to IP %s", _mqttIP.toString()));
+		_pHomeAssistant->update();
+	}
 }
 
 bool Controller::update() {
@@ -346,7 +358,9 @@ bool Controller::update() {
 
 	_pDisplay->update(_bWifiEnabled, _bNTPEnabled);
 
-	_pHomeAssistant->update();
+	if (_pHomeAssistant != nullptr) {
+		_pHomeAssistant->update();
+	}
 
 	// save values to EEPROM (if scheduled)
 	if(_bDeferredSavingToEEPROMScheduled) {

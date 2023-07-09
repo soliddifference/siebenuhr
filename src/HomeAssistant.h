@@ -30,9 +30,8 @@ public:
   static void onSelectCommand(int8_t index, HASelect* sender);
   static void onTextCommand(String text, HATextExt* sender);
 
-  void setup();
+  bool setup();
   void update();
-  void init();
 
 private:
     WiFiClient client;
