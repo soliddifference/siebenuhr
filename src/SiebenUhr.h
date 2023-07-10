@@ -111,8 +111,7 @@ void debugColor(CRGB color, int scale = 1);
 
 inline int max(int a, int b)
 {
-	if (a > b)
-	{
+	if (a > b) {
 		return a;
 	}
 	return b;
@@ -120,8 +119,7 @@ inline int max(int a, int b)
 
 inline int min(int a, int b)
 {
-	if (a < b)
-	{
+	if (a < b) {
 		return a;
 	}
 	return b;
@@ -212,76 +210,6 @@ inline void debugColor(CRGB color, int scale)
 	}
 
 	Serial.println();
-}
-
-inline void debug_listDir(fs::FS &fs, const char *dirname, uint8_t levels)
-{
-	Serial.printf("Listing directory: %s\r\n", dirname);
-
-	File root = fs.open(dirname);
-	if (!root)
-	{
-		Serial.println("- failed to open directory");
-		return;
-	}
-	if (!root.isDirectory())
-	{
-		Serial.println(" - not a directory");
-		return;
-	}
-
-	File file = root.openNextFile();
-	while (file)
-	{
-		if (file.isDirectory())
-		{
-			Serial.print("  DIR : ");
-			Serial.println(file.name());
-			if (levels)
-			{
-				debug_listDir(fs, file.name(), levels - 1);
-			}
-		}
-		else
-		{
-			Serial.print("  FILE: ");
-			Serial.print(file.name());
-			Serial.print("\t\tSIZE: ");
-			Serial.println(file.size());
-		}
-		file = root.openNextFile();
-	}
-}
-
-inline String EEPROMReadString(char eeprom_address, int maxLength)
-{
-	char data[maxLength]; // Max 100 Bytes
-	int len = 0;
-	unsigned char k;
-	k = EEPROM.read(eeprom_address);
-	while (k != '\0' && len < maxLength) // Read until null character
-	{
-		k = EEPROM.read(eeprom_address + len);
-		data[len] = k;
-		len++;
-	}
-	data[len] = '\0';
-	return String(data);
-}
-
-inline void EEPROMWriteString(char eeprom_address, String data, int maxLength)
-{
-	if (data.equals(EEPROMReadString(eeprom_address, maxLength))) {
-		return;
-	}
-	int _size = data.length();
-	int i;
-	for (i = 0; i < _size || i < maxLength; i++) {
-		EEPROM.write(eeprom_address + i, data[i]);
-		delay(10);
-	}
-	EEPROM.write(eeprom_address + _size, '\0'); // Add termination null character for String Data
-	EEPROM.commit();
 }
 
 #endif

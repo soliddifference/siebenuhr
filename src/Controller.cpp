@@ -16,9 +16,7 @@
 using namespace siebenuhr;
 
 Controller* Controller::_pInstance = nullptr;
-UIButton* Controller::_pResetButton = nullptr;
 UIKnob* Controller::_pKnobEncoder = nullptr;
-//HomeAssistant* Controller::_pHomeAssistant = nullptr;
 
 const ControllerMenu_t Controller::_sMenu[Controller::_nMenuMaxEntries] = {
 		{CONTROLLER_MENU::CLOCK, "Display Clock", "CLCK"},
@@ -36,8 +34,6 @@ Controller* Controller::getInstance(){
 	}
 	return Controller::_pInstance;
 }
-
-
 
 Controller::Controller() {
 	_bDebugEnabled = false;
@@ -61,6 +57,7 @@ Controller::Controller() {
 	_nSetupHour = 21;
 	_nSetupMinute = 42;
 
+	_pHomeAssistant = nullptr;
 }
 
 void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
@@ -105,7 +102,7 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, 11  /*Europe-Zurich*/, 0);
 		writeToEEPROM(EEPROM_ADDRESS_WIFI_ENABLED, 0, 0);
 
-		saveToEEPROM();
+		flushDeferredSavingToEEPROM();
 	}
 
 	if (true) {
@@ -120,12 +117,48 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 	}
 }
 
+String Controller::readStringFromEEPROM(uint8_t EEPROM_address, int maxLength) {
+	char data[maxLength]; // Max 100 Bytes
+	int len = 0;
+	unsigned char k;
+	k = EEPROM.read(EEPROM_address);
+	while (k != '\0' && len < maxLength) {
+		k = EEPROM.read(EEPROM_address + len);
+		data[len] = k;
+		len++;
+	}
+	data[len] = '\0';
+	return String(data);
+}
+
+void Controller::writeStringToEEPROM(uint8_t EEPROM_address, String data, int maxLength) {
+	if (data.equals(readStringFromEEPROM(EEPROM_address, maxLength))) {
+		return;
+	}
+	int _size = data.length();
+	int i;
+	for (i = 0; i < _size || i < maxLength; i++) {
+		EEPROM.write(EEPROM_address + i, data[i]);
+		delay(10);
+	}
+	EEPROM.write(EEPROM_address + _size, '\0'); // Add termination null character for String Data
+	EEPROM.commit();
+}
+
 uint8_t Controller::readFromEEPROM(uint8_t EEPROM_address) {
   uint8_t return_value = EEPROM.read(EEPROM_address);
   return return_value;
 }
 
-void Controller::saveToEEPROM() {
+void Controller::writeToEEPROM(uint8_t EEPROM_address, uint8_t value, uint32_t delay) {
+	//Utility function to schedule a deferred writing to save a value to EEPROM.
+	uint32_t now = millis();
+	_nDeferredSavingToEEPROMAt[EEPROM_address] = now+delay;
+	_nDeferredSavingToEEPROMValue[EEPROM_address] = value;
+	_bDeferredSavingToEEPROMScheduled = true;
+}
+
+void Controller::flushDeferredSavingToEEPROM() {
 	uint32_t now = millis();
 	for(int EEPROM_address=0; EEPROM_address<EEPROM_ADDRESS_COUNT; EEPROM_address++) {
 		if (_nDeferredSavingToEEPROMAt[EEPROM_address] && now >= _nDeferredSavingToEEPROMAt[EEPROM_address]) {
@@ -152,14 +185,6 @@ void Controller::saveToEEPROM() {
 		EEPROM.commit();
 		debugMessage("[EEPROM] commit!");
 	}
-}
-
-void Controller::writeToEEPROM(const int EEPROM_address, uint8_t value, uint32_t delay) {
-	//Utility function to schedule a deferred writing to save a value to EEPROM.
-	uint32_t now = millis();
-	_nDeferredSavingToEEPROMAt[EEPROM_address] = now+delay;
-	_nDeferredSavingToEEPROMValue[EEPROM_address] = value;
-	_bDeferredSavingToEEPROMScheduled = true;
 }
 
 bool Controller::initializeDebug(bool enabled, int baud, int waitMilliseconds) {
@@ -216,8 +241,8 @@ bool Controller::initializeWifi(bool enabled) {
 
 		WiFi.mode(WIFI_STA);
 
-		String SSID = EEPROMReadString(EEPROM_ADDRESS_WIFI_SSID, EEPROM_ADDRESS_MAX_LENGTH);
-		String PSWD = EEPROMReadString(EEPROM_ADDRESS_WIFI_PSWD, EEPROM_ADDRESS_MAX_LENGTH);
+		String SSID = readStringFromEEPROM(EEPROM_ADDRESS_WIFI_SSID, EEPROM_ADDRESS_MAX_LENGTH);
+		String PSWD = readStringFromEEPROM(EEPROM_ADDRESS_WIFI_PSWD, EEPROM_ADDRESS_MAX_LENGTH);
 
 		if (SSID.length() != 0) {
 			WiFi.begin(SSID.c_str(), PSWD.c_str());
@@ -267,11 +292,6 @@ bool Controller::initializeNTP(bool enabled, int timezoneId) {
 	return true;
 }
 
-void Controller::setResetButton(int buttonResetPin) {
-	_pResetButton = new UIButton(buttonResetPin);
-	_pResetButton->registerCallbacks([]{_pResetButton->callbackButton();});
-}
-
 void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
 	_pKnobEncoder = new UIKnob(knobPinA, knobPinB, buttonPin);
 }
@@ -305,18 +325,9 @@ void Controller::begin() {
     String _mqttUsername; 
 	String _mqttPassword; 
 
-	// FIXME: To be removed, onve the captive portal supplies us with the credentials.
-	// FIRST TIME MANUAL WRITING INTO ROM FOR MQTT VIA CODE
-	// _mqttIP = IPAddress(0,0,0,0);
-	// _mqttUsername = "";
-	// _mqttPassword = "";
-	// EEPROMWriteString(EEPROM_ADDRESS_HA_MQTT_IP,_mqttIP.toString(),20);
-	// EEPROMWriteString(EEPROM_ADDRESS_HA_MQTT_USERNAME,_mqttUsername,40);
-	// EEPROMWriteString(EEPROM_ADDRESS_HA_MQTT_PASSWORD,_mqttPassword,40);
-
-	_mqttIP.fromString(EEPROMReadString(EEPROM_ADDRESS_HA_MQTT_IP, 20));
-	_mqttUsername = EEPROMReadString(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
-	_mqttPassword = EEPROMReadString(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
+	_mqttIP.fromString(readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, 20));
+	_mqttUsername = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
+	_mqttPassword = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
 
 	_pHomeAssistant = new HomeAssistant(_mqttIP, _mqttUsername, _mqttPassword);
 	if (!_pHomeAssistant->setup()) {
@@ -331,12 +342,6 @@ void Controller::begin() {
 }
 
 bool Controller::update() {
-/*	
-	if (_pResetButton != nullptr) {
-		_pResetButton->update();
-		handleResetButton();
-	}
-*/
 	if (_pKnobEncoder != nullptr) {
 		_pKnobEncoder->update();
 		handleMenu();
@@ -377,36 +382,10 @@ bool Controller::update() {
 
 	// save values to EEPROM (if scheduled)
 	if(_bDeferredSavingToEEPROMScheduled) {
-		saveToEEPROM();
+		flushDeferredSavingToEEPROM();
 	}
 
 	return true;
-}
-
-void Controller::handleResetButton() {
-/*	
-	if (_pResetButton->getState()) {
-	    int countdown_int = (5 - (int)(_pResetButton->getTimeSinceStateChange()/1000.f));
-	    if (countdown_int >= 0) {
-			_cMessage = formatString("rst%d", countdown_int);
-			debugMessage(_cMessage);
-			_pDisplay->setNotification(_cMessage);
-	    } else {
-			_cMessage = "boom";
-			debugMessage("Restaring siebenuhr after WIFI-reset.");
-			_pDisplay->setNotification(_cMessage);
-			// code in wifi manager is broken. Just called for debug messages....
-			_pWiFiManager->resetSettings();
-			// here comes the actual reset. Only works after WiFi.begin(); (!)
-			WiFi.disconnect(true, true);
-			// also reset the timezone stored in the EEPROM
-			EEPROMWriteString(EEPROM_ADDRESS_TIMEZONE_OLSON_STRING, "", EEPROM_ADDRESS_TIMEZONE_OLSON_STRING_LENGTH-1);
-			delay(3000);
-			ESP.restart();
-			delay(3000);
-	    }
-	} 
-*/	
 }
 
 void Controller::setMenu(CONTROLLER_MENU menu) {

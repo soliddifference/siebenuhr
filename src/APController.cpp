@@ -99,11 +99,11 @@ bool APController::setupAPCaptivePortal() {
 
   		String ssid = wifiManager.getConfiguredSTASSID();
 		_inst->debugMessage("SSID: %s", ssid.c_str());
-		EEPROMWriteString(EEPROM_ADDRESS_WIFI_SSID, ssid.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+		_inst->writeStringToEEPROM(EEPROM_ADDRESS_WIFI_SSID, ssid.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
 
 		String pwd = wifiManager.getConfiguredSTAPassword();
 		_inst->debugMessage("PSWD: %s", pwd.c_str());
-		EEPROMWriteString(EEPROM_ADDRESS_WIFI_PSWD, pwd.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+		_inst->writeStringToEEPROM(EEPROM_ADDRESS_WIFI_PSWD, pwd.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
 
 		if (_pCustomTZHidden != nullptr) {
 			_nSelectedTimeZoneID = String(_pCustomTZHidden->getValue()).toInt();
