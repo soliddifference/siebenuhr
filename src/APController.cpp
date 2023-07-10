@@ -32,6 +32,9 @@ APController::APController() {
 	_nSelectedTimeZoneID = -1;
 	_pCustomTZDropdown = nullptr;
 	_pCustomTZHidden = nullptr;
+    _pCustomMQTTServer = nullptr;
+    _pCustomMQTTUser = nullptr;
+    _pCustomMQTTPassword = nullptr;
 }
 
 bool APController::begin() {
@@ -94,6 +97,20 @@ bool APController::setupAPCaptivePortal() {
 		_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
 		_pCustomTZDropdown->setCustomHTML(_sDropDownTimeZoneHTML.c_str());
 	}
+
+	if (_pCustomMQTTServer == nullptr) {
+		String mqtt_server = _inst->readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, EEPROM_ADDRESS_MAX_LENGTH);
+		_pCustomMQTTServer = new AsyncWiFiManagerParameter("MQTT IP", "mqtt server", mqtt_server.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+ 		wifiManager.addParameter(_pCustomMQTTServer);
+
+		String mqtt_user = _inst->readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
+		_pCustomMQTTUser = new AsyncWiFiManagerParameter("MQTT User", "mqtt user", mqtt_user.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+ 		wifiManager.addParameter(_pCustomMQTTUser);
+
+		String mqtt_password = _inst->readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
+		_pCustomMQTTPassword = new AsyncWiFiManagerParameter("MQTT Password", "mqtt password", mqtt_password.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+ 		wifiManager.addParameter(_pCustomMQTTPassword);
+	}
 	
     if (wifiManager.startConfigPortal(_sIdentifier)) {
 
@@ -110,6 +127,19 @@ bool APController::setupAPCaptivePortal() {
 			_inst->debugMessage("Timezone select: %s", __timezones[_nSelectedTimeZoneID].name);
 			_inst->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, _nSelectedTimeZoneID, 0);
 		}
+
+  		String mqtt_server = String(_pCustomMQTTServer->getValue());
+		_inst->debugMessage("MQTT IP: %s", mqtt_server.c_str());
+		_inst->writeStringToEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, mqtt_server.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+
+  		String mqtt_user = String(_pCustomMQTTUser->getValue());
+		_inst->debugMessage("MQTT USER: %s", mqtt_user.c_str());
+		_inst->writeStringToEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, mqtt_user.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+
+  		String mqtt_password = String(_pCustomMQTTPassword->getValue());
+		_inst->debugMessage("MQTT PSWD: %s", mqtt_password.c_str());
+		_inst->writeStringToEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, mqtt_password.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+
 		return true;
 	}
 

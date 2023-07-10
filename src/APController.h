@@ -27,6 +27,9 @@ private:
 
     static APController* _pInstance;
     String _sDropDownTimeZoneHTML;
+    AsyncWiFiManagerParameter *_pCustomMQTTServer;
+    AsyncWiFiManagerParameter *_pCustomMQTTUser;
+    AsyncWiFiManagerParameter *_pCustomMQTTPassword;
     AsyncWiFiManagerParameterExt *_pCustomTZDropdown;
     AsyncWiFiManagerParameter *_pCustomTZHidden;
 
