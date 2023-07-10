@@ -181,21 +181,16 @@ public:
   /* method to attach the PIN serially, all on the same PIN with an offset */
   void attach(int glyph_id_in);
   // set the next sympbol to draw
-  //void set_next_digit(int digit = 8, int fade_interval = BLENDIG_PERIOD);
   void set_next_char(char character = '8', int fade_interval = BLENDIG_PERIOD);
 
   // change to a next base color over time
-  void setNextColor(CRGB color, int fade_interval_ms);
-  void setNextColor(CHSV color, int fade_interval_ms);
+  void setColor(CRGB color, int fade_interval_ms);
   void update_blending_to_next_color();
   void update_daylight_color();
 
 
   void set_cake(int cake_id);
   void disturb(int duration = 1000);
-  void setColor(int r, int g, int b);
-  void setColor(const struct CRGB& color);
-  void setColor(const struct CHSV& color);
 
   void update();
 
@@ -228,6 +223,8 @@ private:
    unsigned long sfx_1_duration;
 
    void map_horizontal_effect();
+
+   //int itterator;
 };
 
 #endif
