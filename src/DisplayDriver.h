@@ -25,12 +25,10 @@ public:
 	void getMessage(char *current_message);
 	void setMessageExt(const struct MessageExt &msg, int fade_interval = BLENDIG_PERIOD);
 
-	void setColor(const struct CHSV &color, bool saveToEEPROM = false);
-	void setNextColor(CHSV color, int interval_ms, bool saveToEEPROM = false);
+	void setColor(CHSV color, int interval_ms = BLENDIG_PERIOD);
 	struct CHSV getColor();
 
-	void setColor(const struct CRGB &color, bool saveToEEPROM = false);
-	void setNextColor(CRGB color, int interval_ms, bool saveToEEPROM = false);
+	void setColor(CRGB color, int interval_ms = BLENDIG_PERIOD);
 	struct CRGB getColorRGB();
 
 	void setNotification(String notification, uint32_t milliseconds = 0);

@@ -54,7 +54,9 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 
 	if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
 		_solidColorBeforeShutdown = _solidColor;
-	   	setColor(_solidColor);
+		setColor(_solidColor, 0);
+
+		
 		_inst->debugMessage("Setting solid color.");
 	}
 	_nBrightness = _inst->readFromEEPROM(EEPROM_ADDRESS_BRIGHTNESS); // todo: what happens here with an initial launch?
@@ -68,10 +70,10 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_inst->debugMessage("Brightness     : %d", _nBrightness);
 
 	setPower(true);
-
-	setColor(DEFAULT_COLOR);
 	setNotification(String("7uhr").c_str(), 1000);
 	update(false, false);
+
+
 }
 
 void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
@@ -187,20 +189,20 @@ void DisplayDriver::updateClock()
 				int saturation = 255;
 				int value = 220;
 				CHSV color_of_day_next = CHSV(hue_next, saturation, value);
-				setNextColor(color_of_day_next, getSpecialBlendingPeriod());
+				setColor(color_of_day_next, getSpecialBlendingPeriod());
 				break;
 			}
 
 			case DISPLAY_EFFECT_SOLID_COLOR:
 			{
-				setNextColor(_solidColor, getSpecialBlendingPeriod());
+				setColor(_solidColor, getSpecialBlendingPeriod());
 				break;
 			}
 
 			case DISPLAY_EFFECT_RANDOM_COLOR:
 			{
 				CHSV color_next = CHSV(random(255), 255, 220);
-				setNextColor(color_next, getSpecialBlendingPeriod());
+				setColor(color_next, getSpecialBlendingPeriod());
 				break;
 			}
 		}
@@ -252,8 +254,7 @@ void DisplayDriver::setMessageExt(const struct MessageExt &msg, int fade_interva
 	for (int i = 0; i < 4; i++) {
 		_currentMessage[i] = msg.message[i];
 		_glyphs[i]->set_next_char(msg.message[i], fade_interval);
-		_glyphs[i]->setColor(msg.color[i]);
-		_glyphs[i]->setNextColor(msg.color[i], 0);
+		_glyphs[i]->setColor(msg.color[i], 0);
 	}
 }
 
@@ -300,8 +301,7 @@ void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 		_nDisplayNotificationUntil = 0;
 	}
 
-	//setColor(DEFAULT_COLOR);
-	setNextColor(NOTIFICATION_COLOR,0);
+	setColor(NOTIFICATION_COLOR,0);
 	setMessage(notification, 0);
 }
 
@@ -315,7 +315,7 @@ void DisplayDriver::disableNotification()
 		strncpy(_currentMessage, _messageBeforeNotification, 4);
 		_bNotificationSet = false;
 		if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
-			setColor(_solidColorBeforeNotification, false);
+			setColor(_solidColorBeforeNotification, 0); 
 		}
 	}
 
@@ -336,44 +336,22 @@ int DisplayDriver::isNotificationSet()
 */
 /**************************************************************************/
 
-void DisplayDriver::setColor(const struct CHSV &color, bool saveToEEPROM)
-{
-	_colorCurrent = color;
-	siebenuhr::Controller::getInstance()->debugMessage("Set Color: %d %d %d", color.hue, color.sat, color.val);
-
-	for (int i = 0; i < 4; i++) {
-		_glyphs[i]->setColor(color);
-		_glyphs[i]->setNextColor(color, 0);
-	}
-
-	if (saveToEEPROM) {
-		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
-		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
-		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
-	}
-}
-
-void DisplayDriver::setColor(const struct CRGB &color, bool saveToEEPROM) {
-	CHSV _hsvColor = rgb2hsv_approximate(color);
-	setColor(_hsvColor, saveToEEPROM);
-}
-
-void DisplayDriver::setNextColor(CHSV color, int interval_ms, bool saveToEEPROM)
+void DisplayDriver::setColor(CHSV color, int interval_ms)
 {
 	for (int i = 0; i < 4; i++) {
-		_glyphs[i]->setNextColor(color, interval_ms);
+		_glyphs[i]->setColor(color, interval_ms);
 	}
 
-	if (saveToEEPROM) {
-		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
-		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
-		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
-	}
+	// if (saveToEEPROM) {
+	// 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
+	// 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
+	// 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
+	// }
 }
 
-void DisplayDriver::setNextColor(CRGB color, int interval_ms, bool saveToEEPROM) {
+void DisplayDriver::setColor(CRGB color, int interval_ms) {
 	CHSV _hsvColor = rgb2hsv_approximate(color);
-	setNextColor(_hsvColor, interval_ms, saveToEEPROM);
+	setColor(_hsvColor, interval_ms);
 }
 
 CHSV DisplayDriver::getColor()
@@ -399,7 +377,8 @@ void DisplayDriver::setPower(bool power)
 	if (_bPower) {
 		 if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
 		 	_solidColor = _solidColorBeforeShutdown;
-			setColor(_solidColor);
+			setColor(_solidColor, 0); 
+
 		 }
 		 scheduleRedraw();
 	}
@@ -407,7 +386,8 @@ void DisplayDriver::setPower(bool power)
 		 if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
 		 	_solidColorBeforeShutdown = _solidColor;
 		 }
-		setColor(CHSV(0, 0, 0));
+		setColor(CHSV(0, 0, 0), 0); 
+
 	}
 }
 

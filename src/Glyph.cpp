@@ -46,31 +46,6 @@ void Glyph::attach(int glyph_id_in) {
   _glyph_offset = (3-_glyph_id)*SEGMENT_COUNT*LEDS_PER_SEGMENT;
 }
 
-void Glyph::setColor(int r, int g, int b) {
-  color_current.r = r;
-  color_current.g = g;
-  color_current.b = b;
-}
-
-void Glyph::setColor(const struct CRGB& color) {
-  color_current = color;
-}
-
-void Glyph::setColor(const struct CHSV& color) {
-  color_current = color;
-}
-
-// void Glyph::set_next_digit(int digit, int fade_interval) {
-//     glyph_change_blending_period_started = millis();
-//     glyph_change_blending_period = fade_interval;
-//     for (int i=0; i<SEGMENT_COUNT; i++) {
-//       for(int j=0; j<LEDS_PER_SEGMENT; j++) {
-//         glyph_current[i*LEDS_PER_SEGMENT+j] = glyph_next[i*LEDS_PER_SEGMENT+j];
-//         glyph_next[i*LEDS_PER_SEGMENT+j] = DIGIT[digit][i];
-//       }
-//     }
-// }
-
 void Glyph::set_next_char(char character, int fade_interval) {
     int character_ascii_code = character;
     glyph_change_blending_period_started = millis();
@@ -83,15 +58,7 @@ void Glyph::set_next_char(char character, int fade_interval) {
     }
 }
 
-void Glyph::setNextColor(CRGB color, int fade_interval_ms) {
-    color_change_blending_period_started = millis();
-    color_change_blending_period = fade_interval_ms;
-    color_base = color_current;
-    color_next = color;
-}
-
-void Glyph::setNextColor(CHSV color, int fade_interval_ms) {
-
+void Glyph::setColor(CRGB color, int fade_interval_ms) {
     color_change_blending_period_started = millis();
     color_change_blending_period = fade_interval_ms;
     color_base = color_current;
@@ -100,13 +67,8 @@ void Glyph::setNextColor(CHSV color, int fade_interval_ms) {
 
 void Glyph::update_blending_to_next_color() {
   unsigned long now = millis();
-  // Serial.print("now: ");
-  // Serial.println(now);
-  // Serial.print("bps: ");
-  // Serial.println(color_change_blending_period_started);
-  // Serial.print("ccp: ");
-  // Serial.println(color_change_blending_period);
 
+  // in case we have enough time for blending, we prepare the next color here. 
   if(now - color_change_blending_period_started  < color_change_blending_period) {
     int itterator = floor((now - color_change_blending_period_started)/DISPLAY_REFRESH_INTERVAL);
     itterator = floor(255*(float)itterator/((float)color_change_blending_period/(float)DISPLAY_REFRESH_INTERVAL));
@@ -114,10 +76,12 @@ void Glyph::update_blending_to_next_color() {
     color_current.g = lerp8by8(color_base.g, color_next.g, itterator );
     color_current.b = lerp8by8(color_base.b, color_next.b, itterator );
   }
-}
-
-void Glyph::update_daylight_color() {
-  //int huhu = hour();
+  // else covers the case, where we don't have time for blending, but the new color needs to be set immediatly.
+  else {
+    color_current.r = color_next.r;
+    color_current.g = color_next.g;
+    color_current.b = color_next.b;
+  }
 }
 
 void Glyph::update() {

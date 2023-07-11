@@ -7,12 +7,9 @@
 #include <ArduinoHA.h>
 #include "HATextExt.h"
 
-
-
 #include <WiFi.h>
 
 #include "DisplayDriver.h"
-
 
 namespace siebenuhr {
 

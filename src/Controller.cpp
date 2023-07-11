@@ -356,8 +356,8 @@ void Controller::begin() {
 	if (_bNTPEnabled) {
 		setMenu(CONTROLLER_MENU::CLOCK);
 	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
-	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
-		_pDisplay->setColor(getColor());
+	    //_pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
+		_pDisplay->setColor(getColor(), 0);
 	} else {
 		setMenu(CONTROLLER_MENU::SET_HOUR);
 	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
@@ -445,7 +445,7 @@ void Controller::handleMenu() {
 			break;
 		case CONTROLLER_MENU::SET_MINUTE:
 			// show time as normal
-			_pDisplay->setNextColor(getColor(), 5000);
+			_pDisplay->setColor(getColor(), 5000);
 		    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 			setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
 			_eState = CONTROLLER_STATE::RUNNING;
@@ -487,7 +487,7 @@ void Controller::handleMenu() {
 			case CONTROLLER_MENU::HUE: {
 				CHSV color = CHSV( pos, 255, 220);
 				debugMessage(formatString("Hue: %d", color.hue));
-				_pDisplay->setColor(color, true /* SAFE TO EEPROM*/);
+				_pDisplay->setColor(color, 0 ); // FIXME: We should store this value to EEPROM
 				// _pDisplay->scheduleRedraw();
 				break;
 			}
