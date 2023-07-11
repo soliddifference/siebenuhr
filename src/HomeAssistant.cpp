@@ -15,12 +15,12 @@ HomeAssistant::HomeAssistant(IPAddress ipAddress, String mqttBrokerUsername,Stri
     // _sMQTTBrokerPassword* = mqttBrokerPassword;
     _iMQTTBrokerIPAddress = ipAddress;
     if(!_iMQTTBrokerIPAddress) {
-         Serial.println("Address empty!");
+        siebenuhr::Controller::getInstance()->debugMessage("Homeassistant address empty!");
     }
 }
   
 void HomeAssistant::onStateCommand(bool state, HALight* sender) {
-    siebenuhr::Controller::getInstance()->debugMessage(formatString("Turning Siebenuhr through HA to %3d", state));
+    siebenuhr::Controller::getInstance()->debugMessage("Turning Siebenuhr through HA to %3d", state);
 
     //Serial.print("State: ");
     //Serial.println(state);
@@ -94,8 +94,11 @@ void HomeAssistant::onTextCommand(String text, HATextExt* sender)
     Controller::getInstance()->getDisplayDriver()->setNotification(text, 5000);
 }
 
-bool HomeAssistant::setup() 
-{
+bool HomeAssistant::setup() {
+    if(!_iMQTTBrokerIPAddress) {
+        return false;
+    }
+
     // Unique ID must be set!
 
     // FIXME: For some odd reason mqtt / HA doesn't work if we provide the
@@ -163,7 +166,8 @@ bool HomeAssistant::setup()
     return _mqtt->isConnected(); 
 }
 
-void HomeAssistant::update() 
-{
-    _mqtt->loop();
+void HomeAssistant::update() {
+    if(_iMQTTBrokerIPAddress) {
+        _mqtt->loop();
+    }
 }

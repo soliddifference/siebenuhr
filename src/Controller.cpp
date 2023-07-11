@@ -100,9 +100,18 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 		writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, 0, 0);
 		writeToEEPROM(EEPROM_ADDRESS_COLOR_WHEEL_ANGLE, 171, 0);
 		writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, 11  /*Europe-Zurich*/, 0);
+
 		writeToEEPROM(EEPROM_ADDRESS_WIFI_ENABLED, 0, 0);
+		writeStringToEEPROM(EEPROM_ADDRESS_WIFI_SSID, String(""), EEPROM_ADDRESS_MAX_LENGTH-1);
+		writeStringToEEPROM(EEPROM_ADDRESS_WIFI_PSWD, String(""), EEPROM_ADDRESS_MAX_LENGTH-1);
+
+		writeStringToEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, String(""), EEPROM_ADDRESS_MAX_LENGTH-1);
+		writeStringToEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, String(""), EEPROM_ADDRESS_MAX_LENGTH-1);
+		writeStringToEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, String(""), EEPROM_ADDRESS_MAX_LENGTH-1);
 
 		flushDeferredSavingToEEPROM();
+		debugMessage(formatString("EEPROM factory reset: done!"));
+		delay(1000);
 	}
 
 	if (true) {
@@ -111,9 +120,19 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 
 		debugMessage("\nEEPROM setup completed.");
 		debugMessage("SerialNumber   : %d", _nSerialNumber);
-		debugMessage("Timezone       : %d", nTimeZoneID);
-		debugMessage("Timezone       : %s", __timezones[nTimeZoneID].name);
+		debugMessage("Timezone Index : %d", nTimeZoneID);
+		debugMessage("Timezone Name  : %s", __timezones[nTimeZoneID].name);
+
+		debugMessage("Display Effect : %d", readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX));
+		debugMessage("Display Color  : HSV(%d, %d, %d)", readFromEEPROM(EEPROM_ADDRESS_H), readFromEEPROM(EEPROM_ADDRESS_S), readFromEEPROM(EEPROM_ADDRESS_V));
+
 		debugMessage("Enable WIFI    : %s", useWifi ? "true" : "false");
+		debugMessage("WIFI SSID      : %s", readStringFromEEPROM(EEPROM_ADDRESS_WIFI_SSID, EEPROM_ADDRESS_MAX_LENGTH));
+		debugMessage("WIFI PSWD      : %s", readStringFromEEPROM(EEPROM_ADDRESS_WIFI_PSWD, EEPROM_ADDRESS_MAX_LENGTH));
+
+		debugMessage("MQTT IP        : %s", readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, EEPROM_ADDRESS_MAX_LENGTH));
+		debugMessage("MQTT USER      : %s", readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH));
+		debugMessage("MQTT PSWD      : %s", readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH));
 	}
 }
 
@@ -158,17 +177,19 @@ void Controller::writeToEEPROM(uint8_t EEPROM_address, uint8_t value, uint32_t d
 	_bDeferredSavingToEEPROMScheduled = true;
 }
 
-void Controller::flushDeferredSavingToEEPROM() {
+void Controller::flushDeferredSavingToEEPROM(bool forceFlush) {
 	uint32_t now = millis();
 	for(int EEPROM_address=0; EEPROM_address<EEPROM_ADDRESS_COUNT; EEPROM_address++) {
-		if (_nDeferredSavingToEEPROMAt[EEPROM_address] && now >= _nDeferredSavingToEEPROMAt[EEPROM_address]) {
-			// only save if value != the value already in the EEPROM (to extend the TTL)
-			uint8_t oldValue = EEPROM.read(EEPROM_address);
-			if (oldValue != _nDeferredSavingToEEPROMValue[EEPROM_address]) {
-				EEPROM.write(EEPROM_address, _nDeferredSavingToEEPROMValue[EEPROM_address]);
-				debugMessage(formatString("[EEPROM] addr(%02d) = %d", EEPROM_address, _nDeferredSavingToEEPROMValue[EEPROM_address]));
+		if (forceFlush || now >= _nDeferredSavingToEEPROMAt[EEPROM_address]) {
+			if (_nDeferredSavingToEEPROMAt[EEPROM_address]) {
+				// only save if value != the value already in the EEPROM (to extend the TTL)
+				uint8_t oldValue = EEPROM.read(EEPROM_address);
+				if (oldValue != _nDeferredSavingToEEPROMValue[EEPROM_address]) {
+					EEPROM.write(EEPROM_address, _nDeferredSavingToEEPROMValue[EEPROM_address]);
+					debugMessage(formatString("[EEPROM] addr(%02d) = %d", EEPROM_address, _nDeferredSavingToEEPROMValue[EEPROM_address]));
+				}
+				_nDeferredSavingToEEPROMAt[EEPROM_address] = 0;
 			}
-			_nDeferredSavingToEEPROMAt[EEPROM_address] = 0;
 		}
 
 		// check, if some other EEPROM value is scheduled for saving
@@ -184,6 +205,7 @@ void Controller::flushDeferredSavingToEEPROM() {
 	if(_bDeferredSavingToEEPROMScheduled == false) {
 		EEPROM.commit();
 		debugMessage("[EEPROM] commit!");
+		delay(500);
 	}
 }
 
@@ -292,6 +314,27 @@ bool Controller::initializeNTP(bool enabled, int timezoneId) {
 	return true;
 }
 
+void Controller::initializeHomeAssistant() {
+	IPAddress _mqttIP;    
+    String _mqttUsername; 
+	String _mqttPassword; 
+
+	_mqttIP.fromString(readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, 20));
+	_mqttUsername = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
+	_mqttPassword = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
+
+	_pHomeAssistant = new HomeAssistant(_mqttIP, _mqttUsername, _mqttPassword);
+	if (!_pHomeAssistant->setup()) {
+		delete _pHomeAssistant;
+		_pHomeAssistant = nullptr;
+		debugMessage(formatString("WARNING: MQTT client could NOT connect to IP %s", _mqttIP.toString()));
+	}
+	else {
+		debugMessage(formatString("MQTT client successfully connected to IP %s", _mqttIP.toString()));
+		_pHomeAssistant->update();
+	}
+}
+
 void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
 	_pKnobEncoder = new UIKnob(knobPinA, knobPinB, buttonPin);
 }
@@ -321,24 +364,7 @@ void Controller::begin() {
 		_eState = CONTROLLER_STATE::SETUP_TIME;
 	}
 
-	IPAddress _mqttIP;    
-    String _mqttUsername; 
-	String _mqttPassword; 
-
-	_mqttIP.fromString(readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, 20));
-	_mqttUsername = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
-	_mqttPassword = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
-
-	_pHomeAssistant = new HomeAssistant(_mqttIP, _mqttUsername, _mqttPassword);
-	if (!_pHomeAssistant->setup()) {
-		delete _pHomeAssistant;
-		_pHomeAssistant = nullptr;
-		debugMessage(formatString("WARNING: MQTT client could NOT connect to IP %s", _mqttIP.toString()));
-	}
-	else {
-		debugMessage(formatString("MQTT client successfully connected to IP %s", _mqttIP.toString()));
-		_pHomeAssistant->update();
-	}
+	initializeHomeAssistant();
 }
 
 bool Controller::update() {

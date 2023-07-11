@@ -52,6 +52,7 @@ public:
 	void initializeEEPROM(bool forceFirstTimeSetup=false);
 	bool initializeWifi(bool enabled);
 	bool initializeNTP(bool enabled, int timezoneId = -1);
+	void initializeHomeAssistant();
 	bool initializeDisplay(DisplayDriver* display);
 
 	void begin();
@@ -71,6 +72,7 @@ public:
 	String readStringFromEEPROM(uint8_t EEPROM_address, int maxLength);
 	void writeToEEPROM(uint8_t EEPROM_address, uint8_t value, uint32_t delay=10000);
 	void writeStringToEEPROM(uint8_t EEPROM_address, String data, int maxLength);
+	void flushDeferredSavingToEEPROM(bool forceFlush=false);
 
 	// debugging and logging
 	void debugMessage(const String &s);
@@ -82,8 +84,6 @@ public:
 
 private:
 	Controller();
-
-	void flushDeferredSavingToEEPROM();
 
 	void setMenu(CONTROLLER_MENU menu);
 	void handleMenu();

@@ -44,7 +44,7 @@ bool APController::begin() {
 
 String APController::buildTimezoneCheckboxOption(int default_tz) {
 	String checkboxTimeZone = R"(
-	<br/><label for='timezone'>Timezone</label>
+	<label for='timezone'>Timezone</label>
 	<select name="dayOfWeek" id="timezone" onchange="document.getElementById('key_custom').value = this.value">)";
 
 	const char *timezone_option = R"(<option value="%d">%s</option>)";
@@ -81,12 +81,14 @@ bool APController::setupAPCaptivePortal() {
 	wifiManager.setDebugOutput(false);
 
 	int curTimezoneID = (int)_inst->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
-	if (_pCustomTZDropdown == nullptr && _pCustomTZHidden == nullptr) {
+	if (_pCustomTZHidden == nullptr) {
+		wifiManager.addParameter(new AsyncWiFiManagerParameter("<br/>NTP config:"));
+
 		char convertedValue[6];
 		sprintf(convertedValue, "%d", curTimezoneID); // Need to convert to string to display a default value.
-		_pCustomTZHidden = new AsyncWiFiManagerParameter("key_custom", "Will be hidden", convertedValue, 3);
+		_pCustomTZHidden = new AsyncWiFiManagerParameterExt("key_custom", "Will be hidden", convertedValue, 3);
 		wifiManager.addParameter(_pCustomTZHidden); // Needs to be added before the javascript that hides it
-	}
+	} 
 
 	if (_pCustomTZDropdown == nullptr) {
 		_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
@@ -99,6 +101,8 @@ bool APController::setupAPCaptivePortal() {
 	}
 
 	if (_pCustomMQTTServer == nullptr) {
+		wifiManager.addParameter(new AsyncWiFiManagerParameter("<br/><br/>MQTT config:"));
+
 		String mqtt_server = _inst->readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, EEPROM_ADDRESS_MAX_LENGTH);
 		_pCustomMQTTServer = new AsyncWiFiManagerParameter("MQTT IP", "mqtt server", mqtt_server.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
  		wifiManager.addParameter(_pCustomMQTTServer);
@@ -139,6 +143,11 @@ bool APController::setupAPCaptivePortal() {
   		String mqtt_password = String(_pCustomMQTTPassword->getValue());
 		_inst->debugMessage("MQTT PSWD: %s", mqtt_password.c_str());
 		_inst->writeStringToEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, mqtt_password.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+
+		// save and reboot ESP
+		_inst->debugMessage("New config from captive portal! Rebooting ESP now....");
+		_inst->flushDeferredSavingToEEPROM(true);
+		ESP.restart();
 
 		return true;
 	}

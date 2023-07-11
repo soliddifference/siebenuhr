@@ -129,9 +129,9 @@ void Glyph::update() {
       _leds_char[i].r = lerp8by8(glyph_current[i]*color_current.r, glyph_next[i]*color_current.r, itterator );
       _leds_char[i].g = lerp8by8(glyph_current[i]*color_current.g, glyph_next[i]*color_current.g, itterator );
       _leds_char[i].b = lerp8by8(glyph_current[i]*color_current.b, glyph_next[i]*color_current.b, itterator );
-      if (i==6*LEDS_PER_SEGMENT+2 && _glyph_id == 1 ) {
-        debugColor(_leds_char[i]);
-      }
+      // if (i==6*LEDS_PER_SEGMENT+2 && _glyph_id == 1 ) {
+      //   debugColor(_leds_char[i]);
+      // }
     }
   }
   else {
