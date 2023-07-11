@@ -45,6 +45,8 @@ public:
 
 	static Controller* getInstance();
 
+	void setKnob(int knobPinA, int knobPinB, int buttonPin);
+
 	// update and run
 	bool initializeDebug(bool enabled, int baud=115200, int waitMilliseconds=3000);
 	void initializeEEPROM(bool forceFirstTimeSetup=false);
@@ -64,15 +66,13 @@ public:
 	inline uint16_t getSerialNumber() { return _nSerialNumber; };
 	CHSV getColor();
 
-	void setResetButton(int buttonResetPin);
-	void setKnob(int knobPinA, int knobPinB, int buttonPin);
-
 	// EEPROM
 	uint8_t readFromEEPROM(uint8_t EEPROM_address);
-	void writeToEEPROM(const int EEPROM_address, uint8_t value, uint32_t delay=10000);
+	String readStringFromEEPROM(uint8_t EEPROM_address, int maxLength);
+	void writeToEEPROM(uint8_t EEPROM_address, uint8_t value, uint32_t delay=10000);
+	void writeStringToEEPROM(uint8_t EEPROM_address, String data, int maxLength);
 
 	// debugging and logging
-	// void debugMessage(const char *msg);
 	void debugMessage(const String &s);
 	void debugMessage(const char *format, ...);
 	void debugValue(const char *key, const int value);
@@ -83,7 +83,7 @@ public:
 private:
 	Controller();
 
-	void saveToEEPROM();
+	void flushDeferredSavingToEEPROM();
 
 	void setMenu(CONTROLLER_MENU menu);
 	void handleMenu();
@@ -110,7 +110,6 @@ private:
 	uint8_t  _nDeferredSavingToEEPROMValue[EEPROM_ADDRESS_COUNT];
 
 	// hardware interfaces
-	static UIButton* _pResetButton;
 	static UIKnob* _pKnobEncoder;
 
 	// LED Display
@@ -125,8 +124,6 @@ private:
 
 	// Home Assistant MQTT-client
 	HomeAssistant* _pHomeAssistant;
-
-
 };
 
 }
