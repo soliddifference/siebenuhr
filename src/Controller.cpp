@@ -339,7 +339,7 @@ void Controller::setKnob(int knobPinA, int knobPinB, int buttonPin) {
 	_pKnobEncoder = new UIKnob(knobPinA, knobPinB, buttonPin);
 }
 
-CHSV Controller::getColor() {
+CHSV Controller::getSolidColorHSVFromEEPROM() {
 	CHSV color;
 	color.h = readFromEEPROM(EEPROM_ADDRESS_H);
 	color.s = readFromEEPROM(EEPROM_ADDRESS_S);
@@ -357,7 +357,7 @@ void Controller::begin() {
 		setMenu(CONTROLLER_MENU::CLOCK);
 	    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 	    //_pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
-		_pDisplay->setColor(getColor(), 0);
+		_pDisplay->setColorHSV(getSolidColorHSVFromEEPROM(), 0);
 	} else {
 		setMenu(CONTROLLER_MENU::SET_HOUR);
 	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
@@ -431,7 +431,7 @@ void Controller::setMenu(CONTROLLER_MENU menu) {
 		_pKnobEncoder->setEncoderBoundaries(5, 255, _pDisplay->getBrightness());
 		break;
 	case CONTROLLER_MENU::HUE: 
-		CHSV current_color = _pDisplay->getColor();
+		CHSV current_color = _pDisplay->getColorHSV();
 		_pKnobEncoder->setEncoderBoundaries(0, 255, current_color.hue, true);
 		break;
 	}
@@ -445,7 +445,7 @@ void Controller::handleMenu() {
 			break;
 		case CONTROLLER_MENU::SET_MINUTE:
 			// show time as normal
-			_pDisplay->setColor(getColor(), 5000);
+			_pDisplay->setColorHSV(getSolidColorHSVFromEEPROM(), 5000);
 		    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 			setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
 			_eState = CONTROLLER_STATE::RUNNING;
@@ -487,7 +487,7 @@ void Controller::handleMenu() {
 			case CONTROLLER_MENU::HUE: {
 				CHSV color = CHSV( pos, 255, 220);
 				debugMessage(formatString("Hue: %d", color.hue));
-				_pDisplay->setColor(color, 0 ); // FIXME: We should store this value to EEPROM
+				_pDisplay->setColorHSV(color, 0 ); // FIXME: We should store this value to EEPROM
 				// _pDisplay->scheduleRedraw();
 				break;
 			}

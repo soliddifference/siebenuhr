@@ -43,7 +43,7 @@ void HomeAssistant::onRGBColorCommand(HALight::RGBColor color, HALight* sender) 
     _newColor.red   = color.red;
     _newColor.green = color.green;
     _newColor.blue  = color.blue;
-    siebenuhr::Controller::getInstance()->getDisplayDriver()->setColor(_newColor, 0);
+    siebenuhr::Controller::getInstance()->getDisplayDriver()->setColorRGB(_newColor, 0);
     sender->setRGBColor(color); // report color back to the Home Assistant
 }
 

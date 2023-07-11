@@ -65,7 +65,7 @@ public:
 	// configuration
 	inline bool getFirstTimeSetup() { return _bFirstTimeSetup; };
 	inline uint16_t getSerialNumber() { return _nSerialNumber; };
-	CHSV getColor();
+	CHSV getSolidColorHSVFromEEPROM();
 
 	// EEPROM
 	uint8_t readFromEEPROM(uint8_t EEPROM_address);

@@ -54,7 +54,7 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 
 	if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
 		_solidColorBeforeShutdown = _solidColor;
-		setColor(_solidColor, 0);
+		setColorHSV(_solidColor, 0);
 
 		
 		_inst->debugMessage("Setting solid color.");
@@ -66,7 +66,7 @@ void DisplayDriver::setup(bool isFirstTimeSetup)
 	_nDisplayEffect = _inst->readFromEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX);
 
 	_inst->debugMessage("Display setup completed.");
-	_inst->debugMessage("Color          : %d", _colorCurrent.hue);
+	_inst->debugMessage("Color          : R:%d G:%d B:%d", _colorCurrent.r, _colorCurrent.g, _colorCurrent.b);
 	_inst->debugMessage("Brightness     : %d", _nBrightness);
 
 	setPower(true);
@@ -189,20 +189,20 @@ void DisplayDriver::updateClock()
 				int saturation = 255;
 				int value = 220;
 				CHSV color_of_day_next = CHSV(hue_next, saturation, value);
-				setColor(color_of_day_next, getSpecialBlendingPeriod());
+				setColorHSV(color_of_day_next, getSpecialBlendingPeriod());
 				break;
 			}
 
 			case DISPLAY_EFFECT_SOLID_COLOR:
 			{
-				setColor(_solidColor, getSpecialBlendingPeriod());
+				setColorHSV(_solidColor, getSpecialBlendingPeriod());
 				break;
 			}
 
 			case DISPLAY_EFFECT_RANDOM_COLOR:
 			{
 				CHSV color_next = CHSV(random(255), 255, 220);
-				setColor(color_next, getSpecialBlendingPeriod());
+				setColorHSV(color_next, getSpecialBlendingPeriod());
 				break;
 			}
 		}
@@ -254,7 +254,7 @@ void DisplayDriver::setMessageExt(const struct MessageExt &msg, int fade_interva
 	for (int i = 0; i < 4; i++) {
 		_currentMessage[i] = msg.message[i];
 		_glyphs[i]->set_next_char(msg.message[i], fade_interval);
-		_glyphs[i]->setColor(msg.color[i], 0);
+		_glyphs[i]->setColorRGB(msg.color[i], 0);
 	}
 }
 
@@ -301,7 +301,7 @@ void DisplayDriver::setNotification(char notification[4], uint32_t milliseconds)
 		_nDisplayNotificationUntil = 0;
 	}
 
-	setColor(NOTIFICATION_COLOR,0);
+	setColorHSV(NOTIFICATION_COLOR,0);
 	setMessage(notification, 0);
 }
 
@@ -315,7 +315,7 @@ void DisplayDriver::disableNotification()
 		strncpy(_currentMessage, _messageBeforeNotification, 4);
 		_bNotificationSet = false;
 		if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
-			setColor(_solidColorBeforeNotification, 0); 
+			setColorHSV(_solidColorBeforeNotification, 0); 
 		}
 	}
 
@@ -330,40 +330,35 @@ int DisplayDriver::isNotificationSet()
 
 /**************************************************************************/
 /*
-		setColor
+		setColorHSV
 
 		Low level routine to set a new color for all 4 glyphs.
 */
 /**************************************************************************/
 
-void DisplayDriver::setColor(CHSV color, int interval_ms)
+void DisplayDriver::setColorHSV(CHSV color, int interval_ms)
 {
+	CRGB _rgbColor;
+	hsv2rgb_rainbow(color, _rgbColor);
+	setColorRGB(_rgbColor, interval_ms);
+}
+
+void DisplayDriver::setColorRGB(CRGB color, int interval_ms) {
+	_colorCurrent = color;
 	for (int i = 0; i < 4; i++) {
-		_glyphs[i]->setColor(color, interval_ms);
+		_glyphs[i]->setColorRGB(color, interval_ms);
 	}
-
-	// if (saveToEEPROM) {
-	// 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, color.h);
-	// 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, color.s);
-	// 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, color.v);
-	// }
 }
 
-void DisplayDriver::setColor(CRGB color, int interval_ms) {
-	CHSV _hsvColor = rgb2hsv_approximate(color);
-	setColor(_hsvColor, interval_ms);
-}
-
-CHSV DisplayDriver::getColor()
+CHSV DisplayDriver::getColorHSV()
 {
-	return _colorCurrent;
+	CHSV _colorHSv = rgb2hsv_approximate(_colorCurrent);
+	return _colorHSv;
 }
 
 CRGB DisplayDriver::getColorRGB()
 {
-	CRGB _rgbColor; 
-	hsv2rgb_rainbow(_solidColor, _rgbColor );
-	return _rgbColor;
+	return _colorCurrent;
 }
 
 uint8_t DisplayDriver::getPower()
@@ -377,7 +372,7 @@ void DisplayDriver::setPower(bool power)
 	if (_bPower) {
 		 if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
 		 	_solidColor = _solidColorBeforeShutdown;
-			setColor(_solidColor, 0); 
+			setColorHSV(_solidColor, 0); 
 
 		 }
 		 scheduleRedraw();
@@ -386,7 +381,7 @@ void DisplayDriver::setPower(bool power)
 		 if(getDisplayEffect() == DISPLAY_EFFECT_SOLID_COLOR) {
 		 	_solidColorBeforeShutdown = _solidColor;
 		 }
-		setColor(CHSV(0, 0, 0), 0); 
+		setColorHSV(CHSV(0, 0, 0), 0); 
 
 	}
 }

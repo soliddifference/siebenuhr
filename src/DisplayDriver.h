@@ -25,10 +25,10 @@ public:
 	void getMessage(char *current_message);
 	void setMessageExt(const struct MessageExt &msg, int fade_interval = BLENDIG_PERIOD);
 
-	void setColor(CHSV color, int interval_ms = BLENDIG_PERIOD);
-	struct CHSV getColor();
+	void setColorHSV(CHSV color, int interval_ms = BLENDIG_PERIOD);
+	struct CHSV getColorHSV();
 
-	void setColor(CRGB color, int interval_ms = BLENDIG_PERIOD);
+	void setColorRGB(CRGB color, int interval_ms = BLENDIG_PERIOD);
 	struct CRGB getColorRGB();
 
 	void setNotification(String notification, uint32_t milliseconds = 0);
@@ -106,7 +106,7 @@ private:
 			"Clock (hours)", "Clock (minutes)", "Message", "Progress Bar Bottom", "Progress Bar Complete"};
 	uint8_t _operation_mode_count = 5;
 
-	struct CHSV _colorCurrent; // this is the current color of the clock
+	struct CRGB _colorCurrent; // this is the current color of the clock
 	struct CHSV _solidColor; // this is thecolor, if the clock is set to a solid color. It's NOT the current color
 	uint8_t _nHue = 0; // rotating "base color" used by many of the display effects
 	uint16_t _nHueSpeed = 20;

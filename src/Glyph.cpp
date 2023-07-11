@@ -58,7 +58,7 @@ void Glyph::set_next_char(char character, int fade_interval) {
     }
 }
 
-void Glyph::setColor(CRGB color, int fade_interval_ms) {
+void Glyph::setColorRGB(CRGB color, int fade_interval_ms) {
     color_change_blending_period_started = millis();
     color_change_blending_period = fade_interval_ms;
     color_base = color_current;

@@ -184,7 +184,7 @@ public:
   void set_next_char(char character = '8', int fade_interval = BLENDIG_PERIOD);
 
   // change to a next base color over time
-  void setColor(CRGB color, int fade_interval_ms);
+  void setColorRGB(CRGB color, int fade_interval_ms);
   void update_blending_to_next_color();
   void update_daylight_color();
 
