@@ -85,9 +85,10 @@ public:
 private:
 	Controller();
 
+	void resetEEPROM();
+
 	void setMenu(CONTROLLER_MENU menu);
 	void handleMenu();
-	void handleResetButton();
 
 	CONTROLLER_STATE _eState;
 	int _nLastErrorCode;

@@ -35,6 +35,10 @@ Controller* Controller::getInstance(){
 	return Controller::_pInstance;
 }
 
+bool isSerialValid(uint16_t serialNumber) {
+	return !(serialNumber == 65535 || serialNumber == 0);
+}
+
 Controller::Controller() {
 	_bDebugEnabled = false;
 	_bEEPROMEnabled = false;
@@ -73,13 +77,19 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 	uint8_t serialNumber_highByte = readFromEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE);
 	_nSerialNumber = (serialNumber_highByte<<8) | serialNumber_lowByte;
 
-	if(forceFirstTimeSetup || _nSerialNumber == 65535 || _nSerialNumber == 0) {
-		// according to the ARDUINO documentation, EEPROM.read() returns 255 if no
-		// has been written to the EEPROM before. therefore the siebenuhrs EEPROM
-		// needs to be initialized with the default values and the serial number
+	uint8_t firmware_version = readFromEEPROM(EEPROM_ADDRESS_VERSION);
+	if (SIEBENURH_FIRMWARE_VERSION != firmware_version) {
+		if (isSerialValid(_nSerialNumber)) {
+			debugMessage("An old EEPROM data structure was detected, forcing fist time configuration.");
+			resetEEPROM();
+			forceFirstTimeSetup = true;
+		}
+	}
+
+	if(forceFirstTimeSetup || !isSerialValid(_nSerialNumber)) {
 		_bFirstTimeSetup = true;
 
-		debugMessage(formatString("Executing first time setup..."));
+		debugMessage(formatString("Writing first time configuration..."));
 
 		uint64_t addr = ESP.getEfuseMac();
 		uint8_t serial[8];
@@ -91,6 +101,7 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 
 		writeToEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE, serialNumber_lowByte, 0);
 		writeToEEPROM(EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE, serialNumber_highByte, 0);
+		writeToEEPROM(EEPROM_ADDRESS_VERSION, SIEBENURH_FIRMWARE_VERSION, 0);
 
 		// lets save all the default values to EEPROM
 		writeToEEPROM(EEPROM_ADDRESS_H, DEFAULT_COLOR.h, 0);
@@ -134,6 +145,14 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 		debugMessage("MQTT USER      : %s", readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH));
 		debugMessage("MQTT PSWD      : %s", readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH));
 	}
+}
+
+void Controller::resetEEPROM() {
+	for (int i = 0; i < 512; i++) {
+		EEPROM.write(i, 0);
+	}
+	EEPROM.commit();
+	delay(500);	
 }
 
 String Controller::readStringFromEEPROM(uint8_t EEPROM_address, int maxLength) {

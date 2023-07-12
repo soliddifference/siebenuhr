@@ -11,6 +11,8 @@
 
 #define QUINLEDBOARD
 
+static const int SIEBENURH_FIRMWARE_VERSION = 1; // just increase if EEPROM structure changed
+
 static const int DEFAULT_SETUP_HOUR = 7;
 static const int DEFAULT_SETUP_MINUTE = 42;
 
@@ -42,27 +44,29 @@ static const int DISPLAY_EFFECT_RANDOM_COLOR = 2;
 
 static const int EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE = 0;
 static const int EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE = 1;
-static const int EEPROM_ADDRESS_H = 2;
-static const int EEPROM_ADDRESS_S = 3;
-static const int EEPROM_ADDRESS_V = 4;
-static const int EEPROM_ADDRESS_BRIGHTNESS = 5;
-static const int EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX = 6;
-static const int EEPROM_ADDRESS_COLOR_WHEEL_ANGLE = 7;
-static const int EEPROM_ADDRESS_TIMEZONE_ID = 8;
-static const int EEPROM_ADDRESS_WIFI_ENABLED = 9;
+static const int EEPROM_ADDRESS_VERSION = 2;
+static const int EEPROM_ADDRESS_H = 3;
+static const int EEPROM_ADDRESS_S = 4;
+static const int EEPROM_ADDRESS_V = 5;
+static const int EEPROM_ADDRESS_BRIGHTNESS = 6;
+static const int EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX = 7;
+static const int EEPROM_ADDRESS_COLOR_WHEEL_ANGLE = 8;
+static const int EEPROM_ADDRESS_TIMEZONE_ID = 9;
+static const int EEPROM_ADDRESS_WIFI_ENABLED = 10;
+// strings starting here....
 static const int EEPROM_ADDRESS_WIFI_SSID = 20;
 static const int EEPROM_ADDRESS_WIFI_PSWD = 60;
 static const int EEPROM_ADDRESS_HA_MQTT_USERNAME = 100;
 static const int EEPROM_ADDRESS_HA_MQTT_PASSWORD = 140;
 static const int EEPROM_ADDRESS_HA_MQTT_IP = 200;
 
-
 static const int EEPROM_ADDRESS_MAX_LENGTH = 40;
 
-static const uint8_t EEPROM_ADDRESS_COUNT = 12;
-static const uint8_t EEPROM_ADDRESSES[EEPROM_ADDRESS_COUNT] = {
+static const uint8_t EEPROM_ADDRESS_COUNT = 11;
+static const uint8_t EEPROM_ADDRESSES[EEPROM_ADDRESS_COUNT] = { // exclude 'strings' as they need to be handled differently
 	EEPROM_ADDRESS_SERIAL_NUMBER_LOW_BYTE,
 	EEPROM_ADDRESS_SERIAL_NUMBER_HIGH_BYTE,
+	EEPROM_ADDRESS_VERSION,
 	EEPROM_ADDRESS_H,
 	EEPROM_ADDRESS_S,
 	EEPROM_ADDRESS_V,
@@ -70,9 +74,8 @@ static const uint8_t EEPROM_ADDRESSES[EEPROM_ADDRESS_COUNT] = {
 	EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX,
 	EEPROM_ADDRESS_COLOR_WHEEL_ANGLE,
 	EEPROM_ADDRESS_TIMEZONE_ID,
-	EEPROM_ADDRESS_WIFI_ENABLED,
-	EEPROM_ADDRESS_WIFI_SSID, 
-	EEPROM_ADDRESS_WIFI_PSWD};
+	EEPROM_ADDRESS_WIFI_ENABLED
+};
 
 static const int BLENDIG_PERIOD = 500;
 
