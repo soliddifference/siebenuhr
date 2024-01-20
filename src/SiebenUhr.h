@@ -9,7 +9,8 @@
 #include <SPIFFS.h>
 #include <EEPROM.h>
 
-#define QUINLEDBOARD
+#define QUINLEDBOARD 	// PCB Version
+#define SIEBENUHR_MINI	// disable to build for the standart siebenuhr
 
 static const int SIEBENURH_FIRMWARE_VERSION = 1; // just increase if EEPROM structure changed
 
@@ -19,11 +20,13 @@ static const int DEFAULT_SETUP_MINUTE = 42;
 // number of segments per glyph (hahaha, must be seven, as it's called siebenuhr, stupid!)
 static const int SEGMENT_COUNT = 7;
 // leds per single segment
-// static const int LEDS_PER_SEGMENT = 6;
-static const int LEDS_PER_SEGMENT = 11;
+#ifdef SIEBENUHR_MINI
+	static const int LEDS_PER_SEGMENT = 4;
+#else
+	static const int LEDS_PER_SEGMENT = 11;
+#endif
 // number of glyphs on this clock
 static const int GLYPH_COUNT = 4;
-// static const int GLYPH_COUNT = 1;
 // // what's the refresh rate per second?
 static const int DISPLAY_FREQUENCY = 50;
 // the interval between refreshs (in ms) given a specific frequency

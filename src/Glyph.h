@@ -10,7 +10,6 @@
 #define FASTLED_ALLOW_INTERRUPTS 0
 #endif
 
-// #include <FastLED.h>
 #include "SiebenUhr.h"
 
 class Glyph {

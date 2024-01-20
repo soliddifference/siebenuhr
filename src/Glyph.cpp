@@ -8,8 +8,8 @@
 #include "Glyph.h"
 
 Glyph::Glyph(int leds_per_segment) :
-  _glyphNext = new int[SEGMENT_COUNT*leds_per_segment],
-  _glyphCurrent = new int[SEGMENT_COUNT*leds_per_segment],
+  _glyphNext(new int[SEGMENT_COUNT*leds_per_segment]),
+  _glyphCurrent(new int[SEGMENT_COUNT*leds_per_segment]),
   _leds(new CRGB[SEGMENT_COUNT*leds_per_segment]),
   _leds_char(new CRGB[SEGMENT_COUNT*leds_per_segment]),
   _leds_effect(new CRGB[SEGMENT_COUNT*leds_per_segment]),
@@ -70,11 +70,11 @@ void Glyph::updateBlendingToNextColor() {
 
   // in case we have enough time for blending, we prepare the next color here. 
   if(now - _colorChangeBlendingPeriodStarted  < _colorChangeBlendingPeriod) {
-    int itterator = floor((now - _colorChangeBlendingPeriodStarted)/DISPLAY_REFRESH_INTERVAL);
-    itterator = floor(255*(float)itterator/((float)_colorChangeBlendingPeriod/(float)DISPLAY_REFRESH_INTERVAL));
-    _colorCurrent.r = lerp8by8(_colorBase.r, _colorNext.r, itterator );
-    _colorCurrent.g = lerp8by8(_colorBase.g, _colorNext.g, itterator );
-    _colorCurrent.b = lerp8by8(_colorBase.b, _colorNext.b, itterator );
+    int iterator = floor((now - _colorChangeBlendingPeriodStarted)/DISPLAY_REFRESH_INTERVAL);
+    iterator = floor(255*(float)iterator/((float)_colorChangeBlendingPeriod/(float)DISPLAY_REFRESH_INTERVAL));
+    _colorCurrent.r = lerp8by8(_colorBase.r, _colorNext.r, iterator );
+    _colorCurrent.g = lerp8by8(_colorBase.g, _colorNext.g, iterator );
+    _colorCurrent.b = lerp8by8(_colorBase.b, _colorNext.b, iterator );
   }
   // else covers the case, where we don't have time for blending, but the new color needs to be set immediatly.
   else {
@@ -88,7 +88,7 @@ void Glyph::update() {
   unsigned long now = millis();
   if(now - _glyphChangeBlendingPeriodStarted  < _glyphChangeBlendingPeriod ) {
     int iterator = floor((now - _glyphChangeBlendingPeriodStarted)/DISPLAY_REFRESH_INTERVAL);
-    iterator = floor(255*(float)itterator/((float)_glyphChangeBlendingPeriod/(float)DISPLAY_REFRESH_INTERVAL));
+    iterator = floor(255*(float)iterator/((float)_glyphChangeBlendingPeriod/(float)DISPLAY_REFRESH_INTERVAL));
     for (int i = 0; i < _numLEDS; i++) {
       _leds_char[i].r = lerp8by8(_glyphCurrent[i]*_colorCurrent.r, _glyphNext[i]*_colorCurrent.r, iterator );
       _leds_char[i].g = lerp8by8(_glyphCurrent[i]*_colorCurrent.g, _glyphNext[i]*_colorCurrent.g, iterator );

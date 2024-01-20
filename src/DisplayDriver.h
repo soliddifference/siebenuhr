@@ -1,5 +1,6 @@
-#ifndef DISPLAYDRIVER_H
-#define DISPLAYDRIVER_H
+#ifndef _7U_DISPLAYDRIVER_H
+#define _7U_DISPLAYDRIVER_H
+
 #include "SiebenUhr.h"
 #include "Glyph.h"
 #include <EEPROM.h>

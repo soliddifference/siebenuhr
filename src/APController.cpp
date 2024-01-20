@@ -61,10 +61,8 @@ String APController::buildTimezoneCheckboxOption(int default_tz) {
 	document.getElementById('key_custom').hidden = true;
 	</script>
 	)";
-	// document.querySelector("[for='key_custom']").hidden = true;
 
 	checkboxTimeZone.replace(String("%d"), String(default_tz));
-	// siebenuhr::Controller::getInstance()->debugMessage(checkboxTimeZone);
 
 	return checkboxTimeZone;
 }
