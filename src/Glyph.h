@@ -161,9 +161,6 @@ class Glyph {
   // const int LEDS_PER_SEGMENT;
 
 public:
-  int* glyph_next;    // FIXME: was private, had to move temporarly here for avoiding compiler errors
-
-  int* glyph_current; // FIXME: was private, had to move temporarly here for avoiding compiler errors
   CRGB* _leds; // FIXME: FIXME: was private, had to move temporarly here for avoiding compiler errors
   CRGB* _leds_char;// FIXME: FIXME: was private, had to move temporarly here for avoiding compiler errors
 
@@ -172,59 +169,50 @@ public:
   const int LEDS_PER_SEGMENT; // FIXME was in class definition, had to move temporarly here for avoiding compiler errors
 
   Glyph(int leds_per_segment);
-
   ~Glyph();
-
 
   /* method to attach the gplyphs in paralell, each on a separate pin */
   void attach(int data_pin_in, int glyph_id_in);
   /* method to attach the PIN serially, all on the same PIN with an offset */
   void attach(int glyph_id_in);
+  
   // set the next sympbol to draw
-  void set_next_char(char character = '8', int fade_interval = BLENDIG_PERIOD);
+  void setNextChar(char character = '8', int fade_interval = BLENDIG_PERIOD);
 
   // change to a next base color over time
   void setColorRGB(CRGB color, int fade_interval_ms);
-  void update_blending_to_next_color();
-  void update_daylight_color();
-
-
-  void set_cake(int cake_id);
-  void disturb(int duration = 1000);
-
+  void updateBlendingToNextColor();
+  
   void update();
 
   void sinelon();
-  void update_progress_bar();
-  void update_progress_bar_complete();
+  void updateProgressBar();
+  void updateProgressBarComplete();
 
-  /* the offset of the first pixel of this glyph (0 for parallel,
-     x for serial connections                                         */
-  int _glyph_offset;
+  inline int getOffset()  { return _glyphOffset; };
 
 private:
-   CRGB* _effect_mapper_vertical;
-   int _glyph_id;
+  CRGB* _effectMapperVertical;
+  int _glyphID;
+  int _glyphOffset;
 
-   // total leds per glyph
-   int NUM_LEDS;
+  int* _glyphNext;    // FIXME: was private, had to move temporarly here for avoiding compiler errors
+  int* _glyphCurrent; // FIXME: was private, had to move temporarly here for avoiding compiler errors
 
-   CRGB color_base;
-   CRGB color_current;
-   CRGB color_next;
+  // total leds per glyph
+  int _numLEDS;
 
-   int resting_period;
-   unsigned long glyph_change_blending_period;
-   unsigned long glyph_change_blending_period_started;
-   unsigned long color_change_blending_period;
-   unsigned long color_change_blending_period_started;
-   unsigned long last_update;
-   unsigned long sfx_1_period_started;
-   unsigned long sfx_1_duration;
+  CRGB _colorBase;
+  CRGB _colorCurrent;
+  CRGB _colorNext;
 
-   void map_horizontal_effect();
+  unsigned long _glyphChangeBlendingPeriod;
+  unsigned long _glyphChangeBlendingPeriodStarted;
+  unsigned long _colorChangeBlendingPeriod;
+  unsigned long _colorChangeBlendingPeriodStarted;
+  unsigned long _lastUpdate;
 
-   //int itterator;
+  void mapHorizontalEffect();
 };
 
 #endif

@@ -103,18 +103,21 @@ void DisplayDriver::update(bool wifiConnected, bool NTPEnabled)
 		_nLastUpdate = now;
 
 		for(int i=0; i<4; i++) {
-			_glyphs[i]->update_blending_to_next_color();
+			_glyphs[i]->updateBlendingToNextColor();
 			_glyphs[i]->update();
 		}
 		if (SIEBENUHR_WIRING == SIEBENUHR_WIRING_SERIAL) {
 			for (int i = 0; i < 4; i++) {
-				memmove(&_leds[_glyphs[i]->_glyph_offset], &_glyphs[i]->_leds[0], LEDS_PER_SEGMENT * SEGMENT_COUNT * sizeof(CRGB));
+				memmove(&_leds[_glyphs[i]->getOffset()], &_glyphs[i]->_leds[0], LEDS_PER_SEGMENT * SEGMENT_COUNT * sizeof(CRGB));
 			}
 		}
 
-		if(_bPower) { FastLED.show(); }
-		else 		{ FastLED.clear(true); } // disable the leds if power is set to off
-
+		if(_bPower) { 
+			FastLED.show();
+		} 
+		else { 
+			FastLED.clear(true); // disable the leds if power is set to off
+		}
 
 		_avgComputionTime.addValue(millis() - t_1);
 		_nComputionTimeUpdateCount++;
@@ -169,10 +172,10 @@ void DisplayDriver::updateClock()
 	{
 		_nLastClockUpdate = second();
 		char message[4]{0, 0, 0, 0};
-		message[0] = (int)floor(mPhotoshooting_hour / 10) + '0';
-		message[1] = mPhotoshooting_hour % 10 + '0';
-		message[2] = (int)floor(mPhotoshooting_minute / 10) + '0';
-		message[3] = mPhotoshooting_minute % 10 + '0';
+		message[0] = (int)floor(_photoShootingHour / 10) + '0';
+		message[1] = _photoShootingHour % 10 + '0';
+		message[2] = (int)floor(_photoShootingMinute / 10) + '0';
+		message[3] = _photoShootingMinute % 10 + '0';
 		setMessage(message);
 		printCurrentTime();
 		scheduleRedraw();
@@ -209,19 +212,15 @@ void DisplayDriver::updateClock()
 	}
 }
 
-void DisplayDriver::update_progress_bar()
-{
-	for (int i = 0; i < 4; i++)
-	{
-		_glyphs[i]->update_progress_bar();
+void DisplayDriver::update_progress_bar() {
+	for (int i = 0; i < 4; i++) {
+		_glyphs[i]->updateProgressBar();
 	}
 }
 
-void DisplayDriver::update_progress_bar_complete()
-{
-	for (int i = 0; i < 4; i++)
-	{
-		_glyphs[i]->update_progress_bar_complete();
+void DisplayDriver::update_progress_bar_complete() {
+	for (int i = 0; i < 4; i++) {
+		_glyphs[i]->updateProgressBarComplete();
 	}
 }
 
@@ -238,14 +237,13 @@ void DisplayDriver::setMessage(char message[4], int fade_interval)
 	for (int i = 0; i < 4; i++)
 	{
 		_currentMessage[i] = message[i];
-		_glyphs[i]->set_next_char(message[i], fade_interval);
+		_glyphs[i]->setNextChar(message[i], fade_interval);
 	}
 }
 
 void DisplayDriver::getMessage(char *current_message)
 {
-	for (int i = 0; i < 4; ++i)
-	{
+	for (int i = 0; i < 4; ++i) {
 		current_message[i] = _currentMessage[i];
 	}
 }
@@ -253,7 +251,7 @@ void DisplayDriver::getMessage(char *current_message)
 void DisplayDriver::setMessageExt(const struct MessageExt &msg, int fade_interval) {
 	for (int i = 0; i < 4; i++) {
 		_currentMessage[i] = msg.message[i];
-		_glyphs[i]->set_next_char(msg.message[i], fade_interval);
+		_glyphs[i]->setNextChar(msg.message[i], fade_interval);
 		_glyphs[i]->setColorRGB(msg.color[i], 0);
 	}
 }
@@ -402,22 +400,13 @@ uint8_t DisplayDriver::getDisplayEffect()
 	return _nDisplayEffect;
 }
 
-// String DisplayDriver::get_display_effect_json()
-// {
-// 	String json = "{";
-// 	json += "\"index\":" + String(_nDisplayEffect);
-// 	json += ",\"name\":\"" + String(_display_effects[_nDisplayEffect]) + "\"";
-// 	json += "}";
-// 	return json;
-// }
-
-const char *DisplayDriver::get_display_effect_short()
+const char *DisplayDriver::getDisplayEffectShort()
 {
 	return _display_effects_short[_nDisplayEffect];
 }
 
 // increase or decrease the current display_effect number, and wrap around at the ends
-void DisplayDriver::adjust_and_save_new_display_effect(bool up)
+void DisplayDriver::adjustAndSaveNewDisplayEffect(bool up)
 {
 	if (up)
 		_nDisplayEffect++;

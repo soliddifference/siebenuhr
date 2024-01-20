@@ -52,9 +52,8 @@ public:
 		 operations mode that defines _what_ is being displayed */
 	void setDisplayEffect(uint8_t value);
 	uint8_t getDisplayEffect();
-	void adjust_and_save_new_display_effect(bool up);
-	String get_display_effect_json();
-	const char *get_display_effect_short();
+	void adjustAndSaveNewDisplayEffect(bool up);
+	const char *getDisplayEffectShort();
 
 	void setPalette(uint8_t value);
 	uint8_t getCurrentPalette();
@@ -66,9 +65,6 @@ public:
 	uint8_t getColorWheelAngle();
 	void setColorWheelAngle(uint8_t value, bool saveToEEPROM = true);
 
-	// uint8_t getTimezoneHour();
-	// void setTimezoneHour(int value, bool saveToEEPROM = true);
-
 	void setNewDefaultTimezone(String inTimezone);
 
 	void setOperationMode(uint8_t mode);
@@ -77,8 +73,8 @@ public:
 	void scheduleRedraw();
 	void scheduleRedraw(int blending_period);
 
-	uint8_t mPhotoshooting_hour = 19;
-	uint8_t mPhotoshooting_minute = 37;
+	uint8_t _photoShootingHour = 19;
+	uint8_t _photoShootingMinute = 37;
 
 private:
 	Timezone _ezTimeTimezone;
