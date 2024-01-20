@@ -6,28 +6,27 @@
 
 using namespace siebenuhr;
 
-HomeAssistant::HomeAssistant(IPAddress ipAddress, String mqttBrokerUsername,String mqttBrokerPassword) 
-{
-    //mqttBrokerUsername.c_str(_sMQTTBrokerUsername);
+HomeAssistant::HomeAssistant(const String mqttBrokerIPAddress, const String mqttBrokerUsername, const String mqttBrokerPassword) {
+    _haDeviceSerial = formatString("ws-%d", Controller::getInstance()->getSerialNumber()); 
+
     strcpy(_sMQTTBrokerUsername, mqttBrokerUsername.c_str());
-    strcpy(_sMQTTBrokerPassword, mqttBrokerPassword.c_str());
-    
-    // _sMQTTBrokerPassword* = mqttBrokerPassword;
-    _iMQTTBrokerIPAddress = ipAddress;
+    strcpy(_sMQTTBrokerPassword, mqttBrokerPassword.c_str());   
+    _iMQTTBrokerIPAddress.fromString(mqttBrokerIPAddress.c_str());
     if(!_iMQTTBrokerIPAddress) {
         siebenuhr::Controller::getInstance()->debugMessage("Homeassistant address empty!");
     }
+
+    _haMQTT = nullptr;
+    _haDevice = nullptr;
+
+    _light = nullptr;
+    _color_mode = nullptr; 
+    _text = nullptr;
 }
   
 void HomeAssistant::onStateCommand(bool state, HALight* sender) {
     siebenuhr::Controller::getInstance()->debugMessage("Turning Siebenuhr through HA to %3d", state);
-
-    //Serial.print("State: ");
-    //Serial.println(state);
-    // FIXME: We still need to implement an 'Off' mode for the clock which should be triggered from here
-    //if(!state) {
     Controller::getInstance()->getDisplayDriver()->setPower(state);
-    //}
     sender->setState(state); // report state back to the Home Assistant
 }
 
@@ -82,16 +81,10 @@ void HomeAssistant::onSelectCommand(int8_t index, HASelect* sender)
     sender->setState(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect()); // report the selected option back to the HA panel
 }
 
-void HomeAssistant::onTextCommand(String text, HATextExt* sender)
-{
+void HomeAssistant::onTextCommand(String text, HATextExt* sender) {
     text = text.substring(0,4);
-    sender->setState(text); // report the selected option back to the HA panel
-
-    sender->setState(""); // report the selected option back to the HA panel
-    //Serial.print("Text changed to: ");
-    
-    //Serial.println(text);
     Controller::getInstance()->getDisplayDriver()->setNotification(text, 5000);
+    sender->setState(text); // report the selected option back to the HA panel
 }
 
 bool HomeAssistant::setup() {
@@ -99,44 +92,20 @@ bool HomeAssistant::setup() {
         return false;
     }
 
-    // Unique ID must be set!
-
-    // FIXME: For some odd reason mqtt / HA doesn't work if we provide the
-    // serial number this way, even I don't spot the difference between manually 
-    // providing it or through the serial number function...
-    // 
-    // uint16_t intserial = siebenuhr::Controller::getInstance()->getSerialNumber();
-    // Serial.print("Serial: ");
-    // Serial.println(intserial);
-
-    // const char* d = "30279";
-
-    // const uint16_t serial = 30279;
-    // char buffer[16];  // Adjust the buffer size as per your requirements
-    // sprintf(buffer, "%hu", serial);
-    // const char* charPtr = buffer;
-
-
-    // Serial.print("Serial: ");
-    // Serial.print(strlen(charPtr));
-    // Serial.print(" ");
-    // Serial.println(charPtr);
-    // Serial.print("Serial: ");
-    // Serial.print(strlen(d));
-    // Serial.print(" ");
-    // Serial.println(d);
-
-    const char* _serial = "30279";
-
-    _haDevice = new HADevice(_serial);
-    _mqtt = new HAMqtt(client, *_haDevice);   
+    siebenuhr::Controller::getInstance()->debugMessage("Registering MQTT device: %s", _haDeviceSerial.c_str());
+    if (_haDevice == nullptr) {
+        _haDevice = new HADevice(_haDeviceSerial.c_str());
+    }
+    if (_haMQTT == nullptr) {
+        _haMQTT = new HAMqtt(client, *_haDevice, 16);   
+    }
 
     _haDevice->setName("siebuhr-30279");
     _haDevice->setSoftwareVersion("1.0.0");
     _haDevice->setModel("Siebenuhr");
     _haDevice->setManufacturer("Solid Difference");
 
-    _mqtt->begin(_iMQTTBrokerIPAddress, _sMQTTBrokerUsername, _sMQTTBrokerPassword);
+    _haMQTT->begin(_iMQTTBrokerIPAddress, _sMQTTBrokerUsername, _sMQTTBrokerPassword);
 
     _light = new HALight("siebenuhr", HALight::BrightnessFeature | HALight::RGBFeature);
    
@@ -157,17 +126,17 @@ bool HomeAssistant::setup() {
     _text->onTextCommand(onTextCommand);
 
     // setup complete, let's start the mqtt-client
-    _mqtt->loop();
+    _haMQTT->loop();
     _light->setState(1);
     _light->setBrightness(Controller::getInstance()->getDisplayDriver()->getBrightness());
     
     _color_mode->setState(Controller::getInstance()->getDisplayDriver()->getDisplayEffect());
 
-    return _mqtt->isConnected(); 
+    return _haMQTT->isConnected(); 
 }
 
 void HomeAssistant::update() {
-    if(_iMQTTBrokerIPAddress) {
-        _mqtt->loop();
+    if(_iMQTTBrokerIPAddress && _haMQTT) {
+        _haMQTT->loop();
     }
 }

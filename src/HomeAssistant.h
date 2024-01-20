@@ -16,8 +16,7 @@ namespace siebenuhr {
 class HomeAssistant {
 
 public:
-  HomeAssistant(IPAddress ipAddress, String mqttBrokerUsername,String mqttBrokerPassword);
-
+  HomeAssistant(const String mqttBrokerIPAddress, const String mqttBrokerUsername, const String mqttBrokerPassword);
   ~HomeAssistant()  = default;
 
   static void onBrightnessCommand(uint8_t brightness, HALight* sender);
@@ -31,9 +30,10 @@ public:
   void update();
 
 private:
+    String _haDeviceSerial;
     WiFiClient client;
     HADevice *_haDevice;
-    HAMqtt *_mqtt;
+    HAMqtt *_haMQTT;
     HALight *_light;
     HASelect *_color_mode; 
     HATextExt *_text;

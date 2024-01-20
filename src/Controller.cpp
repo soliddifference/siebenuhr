@@ -334,22 +334,18 @@ bool Controller::initializeNTP(bool enabled, int timezoneId) {
 }
 
 void Controller::initializeHomeAssistant() {
-	IPAddress _mqttIP;    
-    String _mqttUsername; 
-	String _mqttPassword; 
+	String _mqttBrokerIP = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, 20);
+	String _mqttUsername = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
+	String _mqttPassword = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
 
-	_mqttIP.fromString(readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_IP, 20));
-	_mqttUsername = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_USERNAME, EEPROM_ADDRESS_MAX_LENGTH);
-	_mqttPassword = readStringFromEEPROM(EEPROM_ADDRESS_HA_MQTT_PASSWORD, EEPROM_ADDRESS_MAX_LENGTH);
-
-	_pHomeAssistant = new HomeAssistant(_mqttIP, _mqttUsername, _mqttPassword);
+	_pHomeAssistant = new HomeAssistant(_mqttBrokerIP, _mqttUsername, _mqttPassword);
 	if (!_pHomeAssistant->setup()) {
 		delete _pHomeAssistant;
 		_pHomeAssistant = nullptr;
-		debugMessage(formatString("WARNING: MQTT client could NOT connect to IP %s", _mqttIP.toString()));
+		debugMessage(formatString("WARNING: MQTT client could NOT connect to IP %s", _mqttBrokerIP.c_str()));
 	}
 	else {
-		debugMessage(formatString("MQTT client successfully connected to IP %s", _mqttIP.toString()));
+		debugMessage(formatString("MQTT client successfully connected to IP %s", _mqttBrokerIP.c_str()));
 		_pHomeAssistant->update();
 	}
 }
