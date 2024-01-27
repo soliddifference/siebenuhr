@@ -559,42 +559,6 @@ int DisplayDriver::getSpecialBlendingPeriod()
 	return BLENDIG_PERIOD;
 }
 
-
-String DisplayDriver::getStatus()
-{
-	String json = "{";
-
-	json += "\"power\":" + String(_bPower) + ",";
-	json += "\"brightness\":" + String(_nBrightness) + ",";
-
-	json += "\"current_display_effect\":{";
-	json += "\"index\":" + String(_nDisplayEffect);
-	json += ",\"name\":\"" + String(_display_effects[_nDisplayEffect]) + "\"}";
-
-	// FIXME totally broken since move to HSV color.
-	json += ",\"solidColor\":{";
-	json += "\"r\":" + String(_solidColor.h);
-	json += ",\"g\":" + String(_solidColor.s);
-	json += ",\"b\":" + String(_solidColor.v);
-	json += "}";
-
-	json += ",\"hueSpeed\":" + String(_nHueSpeed);
-	json += ",\"paletteSpeed\":" + String(round(_nChangeSpeed));
-	json += ",\"blendingSpeed\":" + String(_nBlendingSpeed);
-
-	json += ",\"display_effects\":[";
-	for (uint8_t i = 0; i < _display_effects_count; i++)
-	{
-		json += "\"" + String(_display_effects[i]) + "\"";
-		if (i < _display_effects_count - 1)
-			json += ",";
-	}
-	json += "]";
-
-	json += "}";
-	return json;
-}
-
 struct CRGB DisplayDriver::convertHexToRGB(String hex)
 {
 	int number = (int)strtol(&hex[0], NULL, 16);

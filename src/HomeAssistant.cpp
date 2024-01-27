@@ -7,7 +7,7 @@
 using namespace siebenuhr;
 
 HomeAssistant::HomeAssistant(const String mqttBrokerIPAddress, const String mqttBrokerUsername, const String mqttBrokerPassword) {
-    _haDeviceSerial = formatString("ws-%d", Controller::getInstance()->getSerialNumber()); 
+    _haDeviceSerial = formatString("siebenuhr-%d", Controller::getInstance()->getSerialNumber()); 
 
     strcpy(_sMQTTBrokerUsername, mqttBrokerUsername.c_str());
     strcpy(_sMQTTBrokerPassword, mqttBrokerPassword.c_str());   
@@ -100,7 +100,7 @@ bool HomeAssistant::setup() {
         _haMQTT = new HAMqtt(client, *_haDevice, 16);   
     }
 
-    _haDevice->setName("siebuhr-30279");
+    _haDevice->setName(_haDeviceSerial.c_str());
     _haDevice->setSoftwareVersion("1.0.0");
     _haDevice->setModel("Siebenuhr");
     _haDevice->setManufacturer("Solid Difference");

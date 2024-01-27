@@ -40,8 +40,6 @@ public:
 
 	void update(bool wifiConnected, bool NTPEnabled);
 
-	String getStatus();
-	
 	uint8_t getPower();
 	void setPower(bool power);
 
