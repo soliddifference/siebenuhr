@@ -107,15 +107,16 @@ bool HomeAssistant::setup() {
 
     _haMQTT->begin(_iMQTTBrokerIPAddress, _sMQTTBrokerUsername, _sMQTTBrokerPassword);
 
-    _light = new HALight("siebenuhr", HALight::BrightnessFeature | HALight::RGBFeature);
+    _light = new HALight("Display", HALight::BrightnessFeature | HALight::RGBFeature);
    
-    _light->setName("siebenuhr");
+    _light->setName("Display");
     _light->onStateCommand(onStateCommand);
     _light->onBrightnessCommand(onBrightnessCommand); 
     _light->onRGBColorCommand(onRGBColorCommand); 
+    _light->setIcon("mdi:clock-digital");
     
-    _color_mode = new HASelect("SiebenuhrColorMode");
-    _color_mode->setName("SiebenuhrColorMode"); // optional
+    _color_mode = new HASelect("ColorMode");
+    _color_mode->setName("ColorMode"); // optional
     _color_mode->onCommand(onSelectCommand);
     _color_mode->setOptions("Color Wheel;Fixed Color;Random Color"); 
     _color_mode->setCurrentState(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect());
