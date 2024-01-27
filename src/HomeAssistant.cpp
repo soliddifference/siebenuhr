@@ -106,23 +106,25 @@ bool HomeAssistant::setup() {
     _haDevice->setManufacturer("Solid Difference");
 
     _haMQTT->begin(_iMQTTBrokerIPAddress, _sMQTTBrokerUsername, _sMQTTBrokerPassword);
-
-    _light = new HALight("Display", HALight::BrightnessFeature | HALight::RGBFeature);
-   
+    
+    _haDisplayIdentifier = formatString("siebenuhr-%d-display", Controller::getInstance()->getSerialNumber()); 
+    _light = new HALight(_haDisplayIdentifier.c_str(), HALight::BrightnessFeature | HALight::RGBFeature);
     _light->setName("Display");
     _light->onStateCommand(onStateCommand);
     _light->onBrightnessCommand(onBrightnessCommand); 
     _light->onRGBColorCommand(onRGBColorCommand); 
     _light->setIcon("mdi:clock-digital");
     
-    _color_mode = new HASelect("ColorMode");
+    _haColorModeIdentifier = formatString("siebenuhr-%d-colormode", Controller::getInstance()->getSerialNumber()); 
+    _color_mode = new HASelect(_haColorModeIdentifier.c_str());
     _color_mode->setName("ColorMode"); // optional
     _color_mode->onCommand(onSelectCommand);
     _color_mode->setOptions("Color Wheel;Fixed Color;Random Color"); 
     _color_mode->setCurrentState(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect());
     _color_mode->setIcon("mdi:apple-keyboard-option"); // optional
 
-    _text = new HATextExt("Notification");
+    _haNotificationIdentifier = formatString("siebenuhr-%d-notification", Controller::getInstance()->getSerialNumber()); 
+    _text = new HATextExt(_haNotificationIdentifier.c_str());
     _text->setName("Notification");
     _text->onTextCommand(onTextCommand);
 

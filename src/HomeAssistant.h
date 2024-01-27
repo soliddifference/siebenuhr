@@ -31,6 +31,14 @@ public:
 
 private:
     String _haDeviceSerial;
+    /* the next three Strings are required as unique identiefiers for Home Assistant
+       If they are not unique, you cannot have more than one Siebenuhr connected at once,
+       as it's not enough, to have the enitity id being unique. */
+    String _haDisplayIdentifier;
+    String _haColorModeIdentifier;
+    String _haNotificationIdentifier;
+    
+
     WiFiClient client;
     HADevice *_haDevice;
     HAMqtt *_haMQTT;
