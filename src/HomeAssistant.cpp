@@ -7,7 +7,7 @@
 using namespace siebenuhr;
 
 HomeAssistant::HomeAssistant(const String mqttBrokerIPAddress, const String mqttBrokerUsername, const String mqttBrokerPassword) {
-    _haDeviceSerial = formatString("siebenuhr-%d", Controller::getInstance()->getSerialNumber()); 
+    _haDeviceSerial = formatString("Siebenuhr-%06d", Controller::getInstance()->getSerialNumber()); 
 
     strcpy(_sMQTTBrokerUsername, mqttBrokerUsername.c_str());
     strcpy(_sMQTTBrokerPassword, mqttBrokerPassword.c_str());   
@@ -107,7 +107,7 @@ bool HomeAssistant::setup() {
 
     _haMQTT->begin(_iMQTTBrokerIPAddress, _sMQTTBrokerUsername, _sMQTTBrokerPassword);
     
-    _haDisplayIdentifier = formatString("siebenuhr-%d-display", Controller::getInstance()->getSerialNumber()); 
+    _haDisplayIdentifier = formatString("siebenuhr-%06d-display", Controller::getInstance()->getSerialNumber()); 
     _light = new HALight(_haDisplayIdentifier.c_str(), HALight::BrightnessFeature | HALight::RGBFeature);
     _light->setName("Display");
     _light->onStateCommand(onStateCommand);
@@ -115,7 +115,7 @@ bool HomeAssistant::setup() {
     _light->onRGBColorCommand(onRGBColorCommand); 
     _light->setIcon("mdi:clock-digital");
     
-    _haColorModeIdentifier = formatString("siebenuhr-%d-colormode", Controller::getInstance()->getSerialNumber()); 
+    _haColorModeIdentifier = formatString("siebenuhr-%06d-colormode", Controller::getInstance()->getSerialNumber()); 
     _color_mode = new HASelect(_haColorModeIdentifier.c_str());
     _color_mode->setName("ColorMode"); // optional
     _color_mode->onCommand(onSelectCommand);
@@ -123,7 +123,7 @@ bool HomeAssistant::setup() {
     _color_mode->setCurrentState(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect());
     _color_mode->setIcon("mdi:apple-keyboard-option"); // optional
 
-    _haNotificationIdentifier = formatString("siebenuhr-%d-notification", Controller::getInstance()->getSerialNumber()); 
+    _haNotificationIdentifier = formatString("siebenuhr-%06d-notification", Controller::getInstance()->getSerialNumber()); 
     _text = new HATextExt(_haNotificationIdentifier.c_str());
     _text->setName("Notification");
     _text->onTextCommand(onTextCommand);
