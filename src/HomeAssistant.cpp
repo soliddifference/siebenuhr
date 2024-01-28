@@ -83,6 +83,8 @@ void HomeAssistant::onSelectCommand(int8_t index, HASelect* sender)
 
 void HomeAssistant::onTextCommand(String text, HATextExt* sender) {
     text = text.substring(0,4);
+    // reformat ceratin letters for better readability
+    text = reformatNotification(text);
     Controller::getInstance()->getDisplayDriver()->setNotification(text, 5000);
     sender->setState(text); // report the selected option back to the HA panel
 }

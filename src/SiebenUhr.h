@@ -10,7 +10,7 @@
 #include <EEPROM.h>
 
 #define QUINLEDBOARD 	// PCB Version
-#define SIEBENUHR_MINI	// disable to build for the standart siebenuhr
+//#define SIEBENUHR_MINI	// disable to build for the standart siebenuhr
 
 static const int SIEBENURH_FIRMWARE_VERSION = 1; // just increase if EEPROM structure changed
 
@@ -217,5 +217,60 @@ inline void debugColor(CRGB color, int scale)
 
 	Serial.println();
 }
+
+inline String reformatNotification(String str)
+{
+    for (int i = 0; i < str.length(); i++) {
+        switch (str[i]) {
+            case 'a':
+                str[i] = 'A';
+                break;
+            case 'B':
+                str[i] = 'b';
+                break;
+            case 'D':
+                str[i] = 'd';
+                break;
+            case 'e':
+                str[i] = 'E';
+                break;
+            case 'g':
+                str[i] = 'G';
+                break;
+			case 'H':
+                str[i] = 'h';
+                break;	
+			case 'i':
+                str[i] = 'I';
+                break;	
+			case 'j':
+                str[i] = 'J';
+                break;	
+			case 'l':
+                str[i] = 'L';
+                break;	
+			case 'M':
+                str[i] = 'm';
+                break;	
+			case 'O':
+                str[i] = 'o';
+                break;	
+			case 'Q':
+                str[i] = 'q';
+                break;
+			case 'R':
+                str[i] = 'r';
+                break;					
+			case 'U':
+                str[i] = 'u';
+                break;						
+            default:
+                // Do nothing if the character doesn't match any case
+                break;
+        }
+    }
+    return str;
+}
+
 
 #endif
