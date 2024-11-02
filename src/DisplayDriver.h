@@ -22,9 +22,13 @@ public:
 	
 	void setup(bool isFirstTimeSetup);
 
+	// void setMessage(String messageString, int fade_interval = BLENDIG_PERIOD);
 	void setMessage(char message[4], int fade_interval = BLENDIG_PERIOD);
 	void getMessage(char *current_message);
 	void setMessageExt(const struct MessageExt &msg, int fade_interval = BLENDIG_PERIOD);
+
+	void setSolidColorHSV(CHSV color, int interval_ms = BLENDIG_PERIOD, bool saveToEEPROM = false);
+	void setSolidColorRGB(CRGB color, int interval_ms = BLENDIG_PERIOD, bool saveToEEPROM = false);
 
 	void setColorHSV(CHSV color, int interval_ms = BLENDIG_PERIOD);
 	struct CHSV getColorHSV();

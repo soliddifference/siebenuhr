@@ -232,17 +232,20 @@ void DisplayDriver::update_progress_bar_complete() {
 */
 /**************************************************************************/
 
-void DisplayDriver::setMessage(char message[4], int fade_interval)
-{
-	for (int i = 0; i < 4; i++)
-	{
+// void DisplayDriver::setMessage(String messageString, int fade_interval) {
+// 	char message[4];
+// 	strncpy(message, messageString.c_str(), 4);
+// 	setMessage(message);
+// }
+
+void DisplayDriver::setMessage(char message[4], int fade_interval) {
+	for (int i = 0; i < 4; i++) {
 		_currentMessage[i] = message[i];
 		_glyphs[i]->setNextChar(message[i], fade_interval);
 	}
 }
 
-void DisplayDriver::getMessage(char *current_message)
-{
+void DisplayDriver::getMessage(char *current_message) {
 	for (int i = 0; i < 4; ++i) {
 		current_message[i] = _currentMessage[i];
 	}
@@ -334,8 +337,40 @@ int DisplayDriver::isNotificationSet()
 */
 /**************************************************************************/
 
-void DisplayDriver::setColorHSV(CHSV color, int interval_ms)
-{
+void DisplayDriver::setSolidColorHSV(CHSV color, int interval_ms, bool saveToEEPROM) {
+	_solidColor = color;
+	_solidColorBeforeShutdown = _solidColor;
+
+	CRGB _rgbColor;
+	hsv2rgb_rainbow(_solidColor, _rgbColor);
+	setColorRGB(_rgbColor, interval_ms);
+
+	if (saveToEEPROM) {
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, _solidColor.h);
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, _solidColor.s);
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, _solidColor.v);
+	}
+
+	_bRedrawScheduled = true;
+}
+
+void DisplayDriver::setSolidColorRGB(CRGB color, int interval_ms, bool saveToEEPROM) {
+	setDisplayEffect(DISPLAY_EFFECT_SOLID_COLOR);
+	_solidColor = rgb2hsv_approximate(color);
+	_solidColorBeforeShutdown = _solidColor;
+
+	setColorRGB(color, interval_ms);
+
+	if (saveToEEPROM) {
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_H, _solidColor.h);
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_S, _solidColor.s);
+		siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_V, _solidColor.v);
+	}
+
+	_bRedrawScheduled = true;
+}
+
+void DisplayDriver::setColorHSV(CHSV color, int interval_ms) {
 	CRGB _rgbColor;
 	hsv2rgb_rainbow(color, _rgbColor);
 	setColorRGB(_rgbColor, interval_ms);
@@ -348,8 +383,7 @@ void DisplayDriver::setColorRGB(CRGB color, int interval_ms) {
 	}
 }
 
-CHSV DisplayDriver::getColorHSV()
-{
+CHSV DisplayDriver::getColorHSV() {
 	CHSV _colorHSv = rgb2hsv_approximate(_colorCurrent);
 	return _colorHSv;
 }
@@ -384,14 +418,15 @@ void DisplayDriver::setPower(bool power)
 	}
 }
 
-void DisplayDriver::setDisplayEffect(uint8_t value)
-{
+void DisplayDriver::setDisplayEffect(uint8_t value) {
 	// don't wrap around at the ends
 	if (value < 0)
 		value = 0;
 	else if (value >= _display_effects_count)
 		value = _display_effects_count - 1;
 	_nDisplayEffect = value;
+	_bRedrawScheduled = true;
+
 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, _nDisplayEffect, 30000);
 }
 
@@ -424,8 +459,7 @@ void DisplayDriver::adjustAndSaveNewDisplayEffect(bool up)
 	siebenuhr::Controller::getInstance()->writeToEEPROM(EEPROM_ADDRESS_DISPLAY_EFFECT_INDEX, _nDisplayEffect, 30000);
 }
 
-void DisplayDriver::setOperationMode(uint8_t mode)
-{
+void DisplayDriver::setOperationMode(uint8_t mode) {
 	_nOperationMode = mode;
 	if (mode == OPERATION_MODE_PHOTO_SHOOTING) {
 		setDisplayEffect(DISPLAY_EFFECT_SOLID_COLOR);

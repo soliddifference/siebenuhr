@@ -25,7 +25,7 @@ HomeAssistant::HomeAssistant(const String mqttBrokerIPAddress, const String mqtt
 }
   
 void HomeAssistant::onStateCommand(bool state, HALight* sender) {
-    siebenuhr::Controller::getInstance()->debugMessage("Turning Siebenuhr through HA to %3d", state);
+    siebenuhr::Controller::getInstance()->debugMessage("Turning Siebenuhr through HA to %s", state?"ON":"OFF");
     Controller::getInstance()->getDisplayDriver()->setPower(state);
     sender->setState(state); // report state back to the Home Assistant
 }
@@ -42,7 +42,8 @@ void HomeAssistant::onRGBColorCommand(HALight::RGBColor color, HALight* sender) 
     _newColor.red   = color.red;
     _newColor.green = color.green;
     _newColor.blue  = color.blue;
-    siebenuhr::Controller::getInstance()->getDisplayDriver()->setColorRGB(_newColor, 0);
+    siebenuhr::Controller::getInstance()->getDisplayDriver()->setSolidColorRGB(_newColor, 0);
+
     sender->setRGBColor(color); // report color back to the Home Assistant
 }
 
@@ -59,8 +60,10 @@ void HomeAssistant::onSelectCommand(int8_t index, HASelect* sender)
 
     case 1:
         // Option "Fixed color" was selected
-        siebenuhr::Controller::getInstance()->debugMessage("Display effect switched to Fixed Color");
+        siebenuhr::Controller::getInstance()->debugMessage("Display effect switched to Fixed Color");       
         if(siebenuhr::Controller::getInstance()->getDisplayDriver()->getDisplayEffect()!=DISPLAY_EFFECT_SOLID_COLOR) {
+            CHSV current_color = siebenuhr::Controller::getInstance()->getDisplayDriver()->getColorHSV();
+			siebenuhr::Controller::getInstance()->getDisplayDriver()->setSolidColorHSV(current_color, 0);
             siebenuhr::Controller::getInstance()->getDisplayDriver()->setDisplayEffect(DISPLAY_EFFECT_SOLID_COLOR);
         };
         break;

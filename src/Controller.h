@@ -93,6 +93,9 @@ private:
 
 	void startWIFISetup();
 
+	bool _bSplash;
+	unsigned long _nSplashTime;
+
 	CONTROLLER_STATE _eState;
 	int _nLastErrorCode;
 	String _strLastErrorDesc;

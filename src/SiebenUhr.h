@@ -40,6 +40,7 @@ static const int OPERATION_MODE_PROGRESS_BAR_COMPLETE = 4;
 static const int OPERATION_MODE_PHOTO_SHOOTING = 5;
 static const int OPERATION_MODE_DEMO = 6;
 static const int OPERATION_MODE_TIME_SETUP = 7;
+static const int OPERATION_MODE_SPLASH = 8;
 
 static const int DISPLAY_EFFECT_DAYLIGHT_WHEEL = 0;
 static const int DISPLAY_EFFECT_SOLID_COLOR = 1;
@@ -95,7 +96,8 @@ static const int SIEBENUHR_WIRING = SIEBENUHR_WIRING_SERIAL;
 #ifdef QUINLEDBOARD
 static const int DATA_PIN_0 = 16; 	// LED1 - LED SERIAL
 static const int DATA_PIN_1 = 15; 	// Q1 - KNOB-ENC-A
-static const int DATA_PIN_2 = 12; 	// Q2 - KNOB-ENC-B
+// static const int DATA_PIN_2 = 12; 	// Q2 - KNOB-ENC-B
+static const int DATA_PIN_2 = 32; 	// Q2 - KNOB-ENC-B
 static const int DATA_PIN_3 = 2; 	// Q3 - KNOB-BUTTON
 #else
 static const int DATA_PIN_0 = 19; // LED SERIAL
