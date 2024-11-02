@@ -392,12 +392,10 @@ void Controller::startWIFISetup() {
 		initializeNTP(true, APController::getInstance()->getSelectedTimeZone()); // needed, as EEPROM is probably not yet saved	
 		debugMessage("WIFI setup done.");
 
-		// 
 		_eState = CONTROLLER_STATE::RUNNING;
 		setMenu(CONTROLLER_MENU::CLOCK);
 }
 
-unsigned long nTimeWifiAP_Delay = 0;
 bool bStartWifiAP = false;
 
 bool Controller::update() {
@@ -413,9 +411,8 @@ bool Controller::update() {
 	if (!_bSplash) {
 		if (!bStartWifiAP && _eState == CONTROLLER_STATE::SETUP_WIFI) {
 			// after displaying WIFI Message start AP for setup
-			_pDisplay->setNotification("UIFI");
+			_pDisplay->setNotification("UiFi");
 			bStartWifiAP = true;
-			nTimeWifiAP_Delay = millis();
 		}
 	} else {
 		long splashTimeVisible = (millis()-_nSplashTime);
@@ -442,7 +439,7 @@ bool Controller::update() {
 	}
 
 	// start wifi AP after delay -> allow notification to transition properly
-	if (bStartWifiAP && (millis()-nTimeWifiAP_Delay) > 1000) {
+	if (bStartWifiAP) {
 		startWIFISetup();
 	}
 
