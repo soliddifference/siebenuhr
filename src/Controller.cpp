@@ -93,7 +93,7 @@ void Controller::initializeEEPROM(bool forceFirstTimeSetup) {
 
 		uint64_t addr = ESP.getEfuseMac();
 		uint8_t serial[8];
-		std::memcpy(serial, &addr, sizeof(addr));
+		memcpy(serial, &addr, sizeof(addr));
 
 		serialNumber_lowByte = serial[0]+serial[1]+serial[2]+serial[3]; // magic 
 		serialNumber_highByte = serial[4]+serial[5]+serial[6]+serial[7]; // pony
