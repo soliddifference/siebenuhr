@@ -421,6 +421,7 @@ bool Controller::update() {
 		long splashTimeVisible = (millis()-_nSplashTime);
 		if (splashTimeVisible>SPLASH_DURATION) {
 			debugMessage("Splash screen off.");
+			debugMessage("Device Serial: %d", _nSerialNumber);
 			setMenu(CONTROLLER_MENU::CLOCK);
 			_pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
 			_pDisplay->setDisplayEffect(DISPLAY_EFFECT_DAYLIGHT_WHEEL);
