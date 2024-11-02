@@ -10,7 +10,7 @@
 #include <EEPROM.h>
 
 #define QUINLEDBOARD 	// PCB Version
-//#define SIEBENUHR_MINI	// disable to build for the standart siebenuhr
+#define SIEBENUHR_MINI	// disable to build for the standart siebenuhr
 
 static const int SIEBENURH_FIRMWARE_VERSION = 1; // just increase if EEPROM structure changed
 
@@ -97,7 +97,7 @@ static const int DATA_PIN_0 = 16; 	// LED1 - LED SERIAL
 static const int DATA_PIN_1 = 15; 	// Q1 - KNOB-ENC-A
 static const int DATA_PIN_2 = 12; 	// Q2 - KNOB-ENC-B
 static const int DATA_PIN_3 = 2; 	// Q3 - KNOB-BUTTON
-#elif
+#else
 static const int DATA_PIN_0 = 19; // LED SERIAL
 static const int DATA_PIN_1 = 21; // KNOB-ENC-A
 static const int DATA_PIN_2 = 22; // KNOB-ENC-B

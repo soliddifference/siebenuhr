@@ -15,7 +15,7 @@ namespace siebenuhr {
 enum CONTROLLER_STATE {
 	UNDEFINED,
 	INITIALIZING,
-	SETUP_TIME,
+	// SETUP_TIME,
 	SETUP_WIFI,
 	RUNNING
 };
@@ -27,8 +27,9 @@ enum CONTROLLER_MENU {
 	SATURATION,
 	EFFECT,
 	TIMEZONE,
-	SET_HOUR,
-	SET_MINUTE,
+	WIFI,
+	// SET_HOUR,
+	// SET_MINUTE,
 	MENU_END
 };
 
@@ -89,6 +90,8 @@ private:
 
 	void setMenu(CONTROLLER_MENU menu);
 	void handleMenu();
+
+	void startWIFISetup();
 
 	CONTROLLER_STATE _eState;
 	int _nLastErrorCode;

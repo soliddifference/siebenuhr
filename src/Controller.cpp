@@ -25,8 +25,9 @@ const ControllerMenu_t Controller::_sMenu[Controller::_nMenuMaxEntries] = {
 		{CONTROLLER_MENU::SATURATION, "Saturation", "SAtU"},
 		{CONTROLLER_MENU::EFFECT, "Effect", "EFCT"},
 		{CONTROLLER_MENU::TIMEZONE, "Timezone", "ZOnE"},
-		{CONTROLLER_MENU::SET_HOUR, "Set Hour", "HOUr"},
-		{CONTROLLER_MENU::SET_MINUTE, "Set Minute", "MinU"}};
+		{CONTROLLER_MENU::WIFI, "WIFI AP", "WiFi"}};
+		// {CONTROLLER_MENU::SET_HOUR, "Set Hour", "HOUr"},
+		// {CONTROLLER_MENU::SET_MINUTE, "Set Minute", "MinU"}};
 
 Controller* Controller::getInstance(){
 	if (Controller::_pInstance == nullptr) {
@@ -374,12 +375,29 @@ void Controller::begin() {
 	    //_pDisplay->setOperationMode(OPERATION_MODE_CLOCK_MINUTES);
 		_pDisplay->setColorHSV(getSolidColorHSVFromEEPROM(), 0);
 	} else {
-		setMenu(CONTROLLER_MENU::SET_HOUR);
+		setMenu(CONTROLLER_MENU::WIFI);
 	    _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
-		_eState = CONTROLLER_STATE::SETUP_TIME;
-	}
+		_eState = CONTROLLER_STATE::SETUP_WIFI;
 
+		// setMenu(CONTROLLER_MENU::SET_HOUR);
+	    // _pDisplay->setOperationMode(OPERATION_MODE_TIME_SETUP);
+		// _eState = CONTROLLER_STATE::SETUP_TIME;
+	}
 	initializeHomeAssistant();
+}
+
+void Controller::startWIFISetup() {
+		debugMessage("WIFI setup starting.");
+		_eState == CONTROLLER_STATE::SETUP_WIFI;
+		APController::getInstance()->begin();
+
+		initializeWifi(true);
+		initializeNTP(true, APController::getInstance()->getSelectedTimeZone()); // needed, as EEPROM is probably not yet saved	
+		debugMessage("WIFI setup done.");
+
+		// 
+		_eState = CONTROLLER_STATE::RUNNING;
+		setMenu(CONTROLLER_MENU::CLOCK);
 }
 
 bool Controller::update() {
@@ -388,31 +406,27 @@ bool Controller::update() {
 		handleMenu();
 
 		if (_pKnobEncoder->getButtonPressTime() >= 5000) {
-			debugMessage("start AP / WIFI setup...");
-			_eState == CONTROLLER_STATE::SETUP_WIFI;
-			APController::getInstance()->begin();
-
-			initializeWifi(true);
-			initializeNTP(true, APController::getInstance()->getSelectedTimeZone()); // needed, as EEPROM is probably not yet saved
+			_eState = CONTROLLER_STATE::SETUP_WIFI;
 		}
 	}
 
-	if (_eState == CONTROLLER_STATE::SETUP_TIME) {
-		MessageExt msg;
+	bool bStartWifiAP = false;
+	if (_eState == CONTROLLER_STATE::SETUP_WIFI) {
+		MessageExt msg;	
 		CHSV highlight = CHSV(140, 255, 220);
 		CHSV lowlight = CHSV(171, 255, 220);
-		msg.message[0] = (int)floor(_nSetupHour / 10) + '0';
-		msg.message[1] = _nSetupHour % 10 + '0';
-		msg.message[2] = (int)floor(_nSetupMinute / 10) + '0';
-		msg.message[3] = _nSetupMinute % 10 + '0';
-		if (_nMenuCurPos == CONTROLLER_MENU::SET_HOUR) {
-			msg.color[0] = msg.color[1] = highlight;
-			msg.color[2] = msg.color[3] = lowlight;
-		} else {
-			msg.color[0] = msg.color[1] = lowlight;
-			msg.color[2] = msg.color[3] = highlight;
-		}
+		msg.message[0] = '0';
+		msg.color[0] = highlight;
+		msg.message[1] = '0';
+		msg.color[1] = lowlight;
+		msg.message[2] = '0';
+		msg.color[2] = highlight;
+		msg.message[3] = '0';
+		msg.color[3] = lowlight;
 		_pDisplay->setMessageExt(msg);
+
+		// after displaying WIFI Message start AP for setup
+		bStartWifiAP = true;
 	}
 
 	_pDisplay->update(_bWifiEnabled, _bNTPEnabled);
@@ -426,6 +440,11 @@ bool Controller::update() {
 		flushDeferredSavingToEEPROM();
 	}
 
+	if (bStartWifiAP) {
+		startWIFISetup();
+	}
+
+
 	return true;
 }
 
@@ -436,12 +455,12 @@ void Controller::setMenu(CONTROLLER_MENU menu) {
 	debugMessage("MENU: %s (uid: %d)", _sMenu[_nMenuCurPos].name.c_str(), _sMenu[_nMenuCurPos].uid);
 	
 	switch (_nMenuCurPos) {			
-	case CONTROLLER_MENU::SET_HOUR:
-		_pKnobEncoder->setEncoderBoundaries(0, 23, DEFAULT_SETUP_HOUR, true);
-		break;
-	case CONTROLLER_MENU::SET_MINUTE:
-		_pKnobEncoder->setEncoderBoundaries(0, 59, DEFAULT_SETUP_MINUTE, true);
-		break;
+	// case CONTROLLER_MENU::SET_HOUR:
+	// 	_pKnobEncoder->setEncoderBoundaries(0, 23, DEFAULT_SETUP_HOUR, true);
+	// 	break;
+	// case CONTROLLER_MENU::SET_MINUTE:
+	// 	_pKnobEncoder->setEncoderBoundaries(0, 59, DEFAULT_SETUP_MINUTE, true);
+	// 	break;
 	case CONTROLLER_MENU::CLOCK:
 		_pKnobEncoder->setEncoderBoundaries(5, 255, _pDisplay->getBrightness());
 		break;
@@ -455,17 +474,17 @@ void Controller::setMenu(CONTROLLER_MENU menu) {
 void Controller::handleMenu() {
 	if(_pKnobEncoder->isButtonReleased()) {
 		switch (_nMenuCurPos) {			
-		case CONTROLLER_MENU::SET_HOUR:
-			setMenu(CONTROLLER_MENU::SET_MINUTE);
-			break;
-		case CONTROLLER_MENU::SET_MINUTE:
-			// show time as normal
-			_pDisplay->setColorHSV(getSolidColorHSVFromEEPROM(), 5000);
-		    _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
-			setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
-			_eState = CONTROLLER_STATE::RUNNING;
-			setMenu(CONTROLLER_MENU::CLOCK);
-			break;
+		// case CONTROLLER_MENU::SET_HOUR:
+		// 	setMenu(CONTROLLER_MENU::SET_MINUTE);
+		// 	break;
+		// case CONTROLLER_MENU::SET_MINUTE:
+		// 	// show time as normal
+		// 	_pDisplay->setColorHSV(getSolidColorHSVFromEEPROM(), 5000);
+		//     _pDisplay->setOperationMode(OPERATION_MODE_CLOCK_HOURS);
+		// 	setTime(_nSetupHour, _nSetupMinute, 0, 1, 1, 2000);
+		// 	_eState = CONTROLLER_STATE::RUNNING;
+		// 	setMenu(CONTROLLER_MENU::CLOCK);
+		// 	break;
 		case CONTROLLER_MENU::CLOCK:
 			setMenu(CONTROLLER_MENU::HUE);
 			break;
@@ -486,18 +505,20 @@ void Controller::handleMenu() {
 		long delta = _pKnobEncoder->getPositionDiff();
 		_nMenuLastPosChange = millis();
 
-		switch(_sMenu[_nMenuCurPos].uid) {
-			case CONTROLLER_MENU::SET_HOUR: {
-				_nSetupHour = pos;
-				debugMessage("manual time setup (HOUR) %d:%d", _nSetupHour, _nSetupMinute);
-				break;
-			}
+		debugMessage("pos %d %d", pos, delta);
 
-			case CONTROLLER_MENU::SET_MINUTE: {
-				_nSetupMinute = pos;
-				debugMessage("manual time setup (MINUTE) %d:%d", _nSetupHour, _nSetupMinute);
-				break;
-			}
+		switch(_sMenu[_nMenuCurPos].uid) {
+			// case CONTROLLER_MENU::SET_HOUR: {
+			// 	_nSetupHour = pos;
+			// 	debugMessage("manual time setup (HOUR) %d:%d", _nSetupHour, _nSetupMinute);
+			// 	break;
+			// }
+
+			// case CONTROLLER_MENU::SET_MINUTE: {
+			// 	_nSetupMinute = pos;
+			// 	debugMessage("manual time setup (MINUTE) %d:%d", _nSetupHour, _nSetupMinute);
+			// 	break;
+			// }
 
 			case CONTROLLER_MENU::HUE: {
 				CHSV color = CHSV( pos, 255, 220);
