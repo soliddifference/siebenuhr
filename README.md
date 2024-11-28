@@ -1,5 +1,3 @@
-siebenuhr2022
-
 # SIEBENUHR
 
 ### A museum-quality modern take on the classic 7-segment clock, enlarged to ridiculous proportions.
