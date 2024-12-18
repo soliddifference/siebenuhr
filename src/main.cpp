@@ -10,15 +10,20 @@
 #include "Controller.h" 
 #include "DisplayDriver.h"
 
-#include <siebenuhr/controller.h>
+// #include <siebenuhr/controller.h>
+#include <siebenuhr_controller.h>
 
 DisplayDriver Display;
 
 void setup() {
-    siebenuhr::core::Controller *pController = siebenuhr::core::Controller::getInstance();
+    siebenuhr_core::Controller *pController = siebenuhr_core::Controller::getInstance();
     if (pController != nullptr) 
     {
-        pController->initialize();
+        #ifdef SIEBENUHR_MINI
+            pController->initialize(1);
+        #else
+            pController->initialize(0);
+        #endif            
     }
 
     siebenuhr::Controller *_cntrl = siebenuhr::Controller::getInstance(); // just for convinience
@@ -55,7 +60,7 @@ void setup() {
 }
 
 void loop() {
-    siebenuhr::core::Controller *pController = siebenuhr::core::Controller::getInstance();
+    siebenuhr_core::Controller *pController = siebenuhr_core::Controller::getInstance();
     if (pController != nullptr) 
     {
         pController->update();
