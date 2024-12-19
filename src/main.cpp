@@ -10,7 +10,7 @@
 #include "Controller.h" 
 #include "DisplayDriver.h"
 
-// #include <siebenuhr/controller.h>
+#include <siebenuhr_core.h>
 #include <siebenuhr_controller.h>
 
 DisplayDriver Display;
@@ -20,10 +20,11 @@ void setup() {
     if (pController != nullptr) 
     {
         #ifdef SIEBENUHR_MINI
-            pController->initialize(1);
+            pController->initialize(siebenuhr_core::Controller::ClockType::Mini);
         #else
-            pController->initialize(0);
+            pController->initialize(siebenuhr_core::Controller::ClockType::Regular);
         #endif            
+        pController->setHeartbeatEnabled(true);
     }
 
     siebenuhr::Controller *_cntrl = siebenuhr::Controller::getInstance(); // just for convinience
