@@ -8,9 +8,9 @@ void setup() {
 
     g_controller = new siebenuhr::Controller();
 
-    g_controller->setLogLevel(static_cast<int>(siebenuhr_core::CoreLogLevel::DEBUG));
+    g_controller->setLogLevel(static_cast<int>(siebenuhr_core::CoreLogLevel::INFO));
     g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_MINI);
-    g_controller->setPersonality(siebenuhr_core::PersonalityType::PERSONALITY_MOSAIK);   
+    g_controller->setPersonality(siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);   
 
     if (!g_controller->initializeWifi(true)) 
     {
