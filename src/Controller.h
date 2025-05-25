@@ -14,14 +14,13 @@ namespace siebenuhr {
         void update() override;
 
     protected: 
-        bool sendBrightnessToHomeAssistant(int brightness) override { return false; };
-        bool sendColorToHomeAssistant(CRGB color) override { return false; };
+        bool handleLongPressReset() override;
 
     private:
         bool m_wifiEnabled = false;
         bool m_NTPEnabled = false;
 
-        Timezone  m_ezTimezone;
+        Timezone m_ezTimezone;
         int m_currentHours = -1;
         int m_currentMinutes = -1; 
     };

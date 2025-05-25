@@ -101,4 +101,8 @@ namespace siebenuhr {
         BaseController::update();
     }
 
+    bool Controller::handleLongPressReset()
+    { 
+        return false; 
+    }
 }
