@@ -142,4 +142,16 @@ namespace siebenuhr {
     { 
         return false; 
     }
+
+    void Controller::onBrightnessChange(int brightness)
+    { 
+        m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), brightness);
+    }
+
+    void Controller::onColorChange(CRGB color)
+    { 
+        m_configuration.write(to_addr(EEPROMAddress::COLOR_R), color.r);
+        m_configuration.write(to_addr(EEPROMAddress::COLOR_G), color.g);
+        m_configuration.write(to_addr(EEPROMAddress::COLOR_B), color.b);
+    }
 }

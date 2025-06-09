@@ -16,6 +16,8 @@ namespace siebenuhr {
 
     protected: 
         bool handleLongPressReset() override;
+        void onBrightnessChange(int brightness) override;
+        void onColorChange(CRGB color) override;
 
     private:
         Configuration m_configuration;
