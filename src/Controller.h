@@ -1,13 +1,14 @@
 #pragma once
 
 #include "siebenuhr_controller.h"
-
+#include "configuration.h"
 #include <ezTime.h>
 
 namespace siebenuhr {
 
     class Controller : public siebenuhr_core::BaseController {
     public:
+        void loadConfiguration(bool forceFirstTimeSetup = false);
         bool initializeWifi(bool enable);
         bool initializeNTP(bool enable, int timezoneId = -1);
 
@@ -17,6 +18,8 @@ namespace siebenuhr {
         bool handleLongPressReset() override;
 
     private:
+        Configuration m_configuration;
+
         bool m_wifiEnabled = false;
         bool m_NTPEnabled = false;
 

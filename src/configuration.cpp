@@ -1,17 +1,27 @@
-#include "EEPROMHandler.h"
+#include "configuration.h"
 
 namespace siebenuhr {
 
-    EEPROMHandler::EEPROMHandler() : deferredWriteCount(0), lastFlushTime(0) {
+    Configuration::Configuration() 
+    : deferredWriteCount(0)
+    , lastFlushTime(0) 
+    {
         // Initialize EEPROM
         EEPROM.begin(512);  // Adjust size based on your EEPROM size
     }
 
-    uint8_t EEPROMHandler::readFromEEPROM(uint8_t EEPROM_address) {
+    void Configuration::reset()
+    {
+        for (int i = 0; i < EEPROM.length(); i++) {
+            EEPROM.write(i, 0x00);
+        }        
+    }
+
+    uint8_t Configuration::read(uint8_t EEPROM_address) {
         return EEPROM.read(EEPROM_address);
     }
 
-    String EEPROMHandler::readStringFromEEPROM(uint8_t EEPROM_address, int maxLength) {
+    String Configuration::readString(uint8_t EEPROM_address, int maxLength) {
         String result = "";
         for (int i = 0; i < maxLength; i++) {
             char c = EEPROM.read(EEPROM_address + i);
@@ -21,12 +31,12 @@ namespace siebenuhr {
         return result;
     }
 
-    void EEPROMHandler::performWrite(uint8_t address, uint8_t value) {
+    void Configuration::performWrite(uint8_t address, uint8_t value) {
         EEPROM.write(address, value);
         EEPROM.commit();
     }
 
-    void EEPROMHandler::writeToEEPROM(uint8_t EEPROM_address, uint8_t value, uint32_t delay) {
+    void Configuration::write(uint8_t EEPROM_address, uint8_t value, uint32_t delay) {
         // Check if we should defer this write
         if (delay > 0) {
             // Add to deferred writes if there's space
@@ -37,7 +47,7 @@ namespace siebenuhr {
                 deferredWriteCount++;
             } else {
                 // If buffer is full, force a flush
-                flushDeferredSavingToEEPROM(true);
+                flushDeferredSaving(true);
                 // Then add this write
                 deferredWrites[0].address = EEPROM_address;
                 deferredWrites[0].value = value;
@@ -50,20 +60,20 @@ namespace siebenuhr {
         }
     }
 
-    void EEPROMHandler::writeStringToEEPROM(uint8_t EEPROM_address, String data, int maxLength) {
+    void Configuration::writeString(uint8_t EEPROM_address, String data, int maxLength) {
         // Ensure we don't write beyond maxLength
         int length = min(data.length(), (unsigned int)(maxLength - 1));
         
         // Write the string
         for (int i = 0; i < length; i++) {
-            writeToEEPROM(EEPROM_address + i, data[i]);
+            write(EEPROM_address + i, data[i]);
         }
         
         // Write null terminator
-        writeToEEPROM(EEPROM_address + length, 0);
+        write(EEPROM_address + length, 0);
     }
 
-    void EEPROMHandler::flushDeferredSavingToEEPROM(bool forceFlush) {
+    void Configuration::flushDeferredSaving(bool forceFlush) {
         if (deferredWriteCount == 0) return;
 
         uint32_t currentTime = millis();

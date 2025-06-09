@@ -91,22 +91,22 @@ namespace siebenuhr {
 
 			String ssid = wifiManager.getConfiguredSTASSID();
 			LOG_I("SSID: %s", ssid.c_str());
-			// _inst->writeStringToEEPROM(EEPROM_ADDRESS_WIFI_SSID, ssid.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+			// _inst->writeString(EEPROM_ADDRESS_WIFI_SSID, ssid.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
 
 			String pwd = wifiManager.getConfiguredSTAPassword();
 			LOG_I("PSWD: %s", pwd.c_str());
-			// _inst->writeStringToEEPROM(EEPROM_ADDRESS_WIFI_PSWD, pwd.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
+			// _inst->writeString(EEPROM_ADDRESS_WIFI_PSWD, pwd.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
 
 			if (_pCustomTZHidden != nullptr) {
 				_nSelectedTimeZoneID = String(_pCustomTZHidden->getValue()).toInt();
 				LOG_I("Timezone select: %s", timezones[_nSelectedTimeZoneID].name);
-				// _inst->writeToEEPROM(EEPROM_ADDRESS_TIMEZONE_ID, _nSelectedTimeZoneID, 0);
+				// _inst->write(EEPROM_ADDRESS_TIMEZONE_ID, _nSelectedTimeZoneID, 0);
 			}
 
 
 			// save and reboot ESP
 			LOG_I("New config from captive portal! Rebooting ESP now....");
-			// _inst->flushDeferredSavingToEEPROM(true);
+			// _inst->flushDeferredSaving(true);
 			ESP.restart();
 
 			return true;

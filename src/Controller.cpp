@@ -1,9 +1,38 @@
 #include "controller.h"
+
 #include "timezone.h"
+#include "siebenuhr_color.h"
 
 #include <WiFi.h>
 
 namespace siebenuhr {
+
+    void Controller::loadConfiguration(bool forceFirstTimeSetup) 
+    {
+        int initialized = m_configuration.read(to_addr(EEPROMAddress::INITIALISED));
+        if (forceFirstTimeSetup || initialized != 1)
+        {
+            m_configuration.reset();
+
+            LOG_I("Initializing default configuration settings.");
+            m_configuration.write(to_addr(EEPROMAddress::INITIALISED), 1);
+            m_configuration.write(to_addr(EEPROMAddress::TIMEZONE_ID), DEFAULT_TIMEZONE);
+            m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), siebenuhr_core::constants::DefaultBrightness);
+            m_configuration.write(to_addr(EEPROMAddress::COLOR_R), siebenuhr_core::constants::DEFAULT_COLOR.r);
+            m_configuration.write(to_addr(EEPROMAddress::COLOR_G), siebenuhr_core::constants::DEFAULT_COLOR.g);
+            m_configuration.write(to_addr(EEPROMAddress::COLOR_B), siebenuhr_core::constants::DEFAULT_COLOR.b);
+            m_configuration.writeString(to_addr(EEPROMAddress::WIFI_SSID), "undefined1");
+            m_configuration.writeString(to_addr(EEPROMAddress::WIFI_PSWD), "undefined2");
+            m_configuration.flushDeferredSaving(true);
+        }
+
+        int brightness = m_configuration.read(to_addr(EEPROMAddress::BRIGHTNESS));
+        CRGB color = CRGB(m_configuration.read(to_addr(EEPROMAddress::COLOR_R)), m_configuration.read(to_addr(EEPROMAddress::COLOR_G)), m_configuration.read(to_addr(EEPROMAddress::COLOR_B)));
+        LOG_I("Clock settings: col=RGB(%d, %d, %d) brightness=%d", color.r, color.g, color.b, brightness);
+
+        setBrightness(brightness);
+        setColor(siebenuhr_core::Color::fromCRGB(color));
+    } 
 
     bool Controller::initializeWifi(bool enable) 
     {
@@ -15,8 +44,14 @@ namespace siebenuhr {
 
             WiFi.mode(WIFI_STA);
 
-            String SSID = "tulporium"; //readStringFromEEPROM(EEPROM_ADDRESS_WIFI_SSID, EEPROM_ADDRESS_MAX_LENGTH);
-            String PSWD = "barneb33"; //readStringFromEEPROM(EEPROM_ADDRESS_WIFI_PSWD, EEPROM_ADDRESS_MAX_LENGTH);
+            String s = m_configuration.readString(to_addr(EEPROMAddress::WIFI_SSID));
+            String p = m_configuration.readString(to_addr(EEPROMAddress::WIFI_PSWD));
+            LOG_I("ZU? %s", s.c_str());
+            LOG_I("ZP? %s", p.c_str());
+
+
+            String SSID = "tulporium"; //readString(EEPROM_ADDRESS_WIFI_SSID, EEPROM_ADDRESS_MAX_LENGTH);
+            String PSWD = "barneb33"; //readString(EEPROM_ADDRESS_WIFI_PSWD, EEPROM_ADDRESS_MAX_LENGTH);
 
             if (SSID.length() != 0) {
                 WiFi.begin(SSID.c_str(), PSWD.c_str());
@@ -49,10 +84,10 @@ namespace siebenuhr {
     {
         if (m_wifiEnabled && enable) {
             if (timezoneId == -1) {
-                timezoneId = 11; //(int)readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
+                timezoneId = m_configuration.read(to_addr(EEPROMAddress::TIMEZONE_ID));                
             }
             String sTimezone = timezones[timezoneId].name;
-            LOG_I("Timezone (EEPROM) : %s", sTimezone.c_str());
+            LOG_I("Timezone(%d) : %s", timezoneId, sTimezone.c_str());
 
             setDebug(INFO);
             while(timeStatus()==timeNotSet) {
@@ -97,6 +132,8 @@ namespace siebenuhr {
             }
         }
         
+        m_configuration.flushDeferredSaving();
+
         // Call the base class update method
         BaseController::update();
     }

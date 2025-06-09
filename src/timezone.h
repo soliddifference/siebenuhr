@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <vector>
 
+#define DEFAULT_TIMEZONE 11
+
 namespace siebenuhr {
     // Timezone structure
     struct STimezone {
