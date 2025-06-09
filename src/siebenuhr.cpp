@@ -12,18 +12,7 @@ void setup() {
     g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_MINI);
     g_controller->loadConfiguration();
     g_controller->setPersonality(siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);   
-
-    if (!g_controller->initializeWifi(true)) 
-    {
-        LOG_E("7Uhr wifi setup failed.");
-        return;
-    }
-
-    if (!g_controller->initializeNTP(true))
-    {
-        LOG_E("7Uhr NTP setup failed.");    
-        return;
-    }        
+    g_controller->setRenderState(siebenuhr::RenderState::SPLASH, "7Uhr");
 }
 
 void loop() {

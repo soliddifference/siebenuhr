@@ -5,6 +5,8 @@
 
 namespace siebenuhr {
 
+    class Configuration;
+
     class APController {
     public:
         APController();
@@ -12,13 +14,13 @@ namespace siebenuhr {
 
         static APController* getInstance();
 
-        bool begin();
+        bool begin(Configuration *config);
 
         void getNetworkInfo();
         inline int getSelectedTimeZone() { return _nSelectedTimeZoneID; };
 
     private:
-        bool setupAPCaptivePortal();
+        bool setupAPCaptivePortal(Configuration *config);
         String buildTimezoneCheckboxOption(int default_tz);
 
         void resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager);

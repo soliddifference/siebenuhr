@@ -41,6 +41,17 @@ namespace siebenuhr {
         if (delay > 0) {
             // Add to deferred writes if there's space
             if (deferredWriteCount < MAX_DEFERRED_WRITES) {
+                for (int i=0;i<deferredWriteCount;i++)
+                {
+                    if (deferredWrites[i].address == EEPROM_address) 
+                    {
+                        deferredWrites[i].address = EEPROM_address;
+                        deferredWrites[i].value = value;
+                        deferredWrites[i].timestamp = millis();
+                        return;
+                    }
+                }
+
                 deferredWrites[deferredWriteCount].address = EEPROM_address;
                 deferredWrites[deferredWriteCount].value = value;
                 deferredWrites[deferredWriteCount].timestamp = millis();

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "controller.h"
+
 #include "accesspoint.h"
 #include "timezone.h"
 
@@ -29,9 +30,9 @@ namespace siebenuhr {
 		_pCustomTZHidden = nullptr;
 	}
 
-	bool APController::begin() {
+	bool APController::begin(Configuration *config) {
 		LOG_I("Starting Access Point...");
-		return setupAPCaptivePortal();
+		return setupAPCaptivePortal(config);
 	}
 
 	String APController::buildTimezoneCheckboxOption(int default_tz) {
@@ -59,15 +60,14 @@ namespace siebenuhr {
 		return checkboxTimeZone;
 	}
 
-	bool APController::setupAPCaptivePortal() {
+	bool APController::setupAPCaptivePortal(Configuration *config) {
 		sprintf(_sIdentifier, "SiebenuhrAP");
 
 		WiFi.disconnect(true, true);
 		wifiManager.resetSettings();
 		wifiManager.setDebugOutput(false);
 
-		int curTimezoneID = 7;
-		// int curTimezoneID = (int)_inst->readFromEEPROM(EEPROM_ADDRESS_TIMEZONE_ID);
+		int curTimezoneID = config->read(to_addr(EEPROMAddress::TIMEZONE_ID));
 		if (_pCustomTZHidden == nullptr) {
 			wifiManager.addParameter(new AsyncWiFiManagerParameter("<br/>NTP config:"));
 
@@ -90,23 +90,24 @@ namespace siebenuhr {
 		if (wifiManager.startConfigPortal(_sIdentifier)) {
 
 			String ssid = wifiManager.getConfiguredSTASSID();
+			config->writeString(to_addr(EEPROMAddress::WIFI_SSID), ssid.c_str());
 			LOG_I("SSID: %s", ssid.c_str());
-			// _inst->writeString(EEPROM_ADDRESS_WIFI_SSID, ssid.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
 
 			String pwd = wifiManager.getConfiguredSTAPassword();
+			config->writeString(to_addr(EEPROMAddress::WIFI_PSWD), pwd.c_str());
 			LOG_I("PSWD: %s", pwd.c_str());
-			// _inst->writeString(EEPROM_ADDRESS_WIFI_PSWD, pwd.c_str(), EEPROM_ADDRESS_MAX_LENGTH-1);
 
 			if (_pCustomTZHidden != nullptr) {
 				_nSelectedTimeZoneID = String(_pCustomTZHidden->getValue()).toInt();
 				LOG_I("Timezone select: %s", timezones[_nSelectedTimeZoneID].name);
-				// _inst->write(EEPROM_ADDRESS_TIMEZONE_ID, _nSelectedTimeZoneID, 0);
+	            config->write(to_addr(EEPROMAddress::TIMEZONE_ID), _nSelectedTimeZoneID);
 			}
 
+			config->flushDeferredSaving(true);
 
 			// save and reboot ESP
-			LOG_I("New config from captive portal! Rebooting ESP now....");
-			// _inst->flushDeferredSaving(true);
+			// LOG_I("New config from captive portal! Rebooting ESP now....");
+			// // _inst->flushDeferredSaving(true);
 			ESP.restart();
 
 			return true;

@@ -1,6 +1,7 @@
 #include "controller.h"
 
 #include "timezone.h"
+#include "accesspoint.h"
 #include "siebenuhr_color.h"
 
 #include <WiFi.h>
@@ -44,21 +45,17 @@ namespace siebenuhr {
 
             WiFi.mode(WIFI_STA);
 
-            String s = m_configuration.readString(to_addr(EEPROMAddress::WIFI_SSID));
-            String p = m_configuration.readString(to_addr(EEPROMAddress::WIFI_PSWD));
-            LOG_I("ZU? %s", s.c_str());
-            LOG_I("ZP? %s", p.c_str());
-
-
-            String SSID = "tulporium"; //readString(EEPROM_ADDRESS_WIFI_SSID, EEPROM_ADDRESS_MAX_LENGTH);
-            String PSWD = "barneb33"; //readString(EEPROM_ADDRESS_WIFI_PSWD, EEPROM_ADDRESS_MAX_LENGTH);
+            String SSID = m_configuration.readString(to_addr(EEPROMAddress::WIFI_SSID));
+            String PSWD = m_configuration.readString(to_addr(EEPROMAddress::WIFI_PSWD));
+            LOG_I("ZU? %s", SSID.c_str());
+            LOG_I("ZP? %s", PSWD.c_str());
 
             if (SSID.length() != 0) {
                 WiFi.begin(SSID.c_str(), PSWD.c_str());
                 LOG_I("Connecting to WiFi (%s)..", SSID.c_str());
                 
                 int ConnectRetries = 0;
-                while (WiFi.status() != WL_CONNECTED && ConnectRetries < 50) {
+                while (WiFi.status() != WL_CONNECTED && ConnectRetries < 20) {
                     ConnectRetries++;
                     LOG_I(".. retry #%d", ConnectRetries);
                     delay(200);
@@ -73,11 +70,15 @@ namespace siebenuhr {
             }	
         } 
 
+        LOG_E("Wifi setup failed!");
+
         WiFi.disconnect();
         WiFi.mode(WIFI_OFF);
         m_wifiEnabled = false;
 
-        return true;
+        setRenderState(RenderState::WIFI, "uiFi");
+
+        return false;
     }
 
     bool Controller::initializeNTP(bool enable, int timezoneId) 
@@ -112,46 +113,71 @@ namespace siebenuhr {
             events(); // give the ezTime-lib it's processing cycle
         }
 
-        if (false)
+        if (m_renderState == RenderState::SPLASH)
         {
-            // fast version (minutes and seconds) for testing
-            if (m_currentHours != minute() || m_currentMinutes != second())
+            if (millis()-m_renderStateChange > 2000) 
             {
-                m_currentHours = minute();
-                m_currentMinutes = second();
-                setTime(m_currentHours, m_currentMinutes);
+                LOG_I("Initializing 7Uhr...");
+                if (initializeWifi(true)) 
+                {
+                    LOG_E("7Uhr wifi setup successful.");
+                    if (initializeNTP(true))
+                    {
+                        LOG_E("7Uhr NTP setup successful.");    
+                        setRenderState(RenderState::CLOCK);
+                    }        
+                }
+            }
+        }
+        else if (m_renderState == RenderState::WIFI)
+        {
+            if (millis()-m_renderStateChange > 2000) 
+            {
+                APController::getInstance()->begin(&m_configuration);
             }
         }
         else
         {
-            if (m_currentHours != hour() || m_currentMinutes != minute())
+            if (false)
             {
-                m_currentHours = hour();
-                m_currentMinutes = minute();
-                setTime(m_currentHours, m_currentMinutes);
+                // fast version (minutes and seconds) for testing
+                if (m_currentHours != minute() || m_currentMinutes != second())
+                {
+                    m_currentHours = minute();
+                    m_currentMinutes = second();
+                    setTime(m_currentHours, m_currentMinutes);
+                }
             }
+            else
+            {
+                if (m_currentHours != hour() || m_currentMinutes != minute())
+                {
+                    m_currentHours = hour();
+                    m_currentMinutes = minute();
+                    setTime(m_currentHours, m_currentMinutes);
+                }
+            }
+            
         }
-        
-        m_configuration.flushDeferredSaving();
 
-        // Call the base class update method
+        m_configuration.flushDeferredSaving();
         BaseController::update();
     }
 
-    bool Controller::handleLongPressReset()
+    void Controller::onButtonLongPress()
     { 
-        return false; 
+        setRenderState(RenderState::WIFI, "uiFi");
     }
 
     void Controller::onBrightnessChange(int brightness)
     { 
-        m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), brightness);
+        m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), brightness, 1000);
     }
 
     void Controller::onColorChange(CRGB color)
     { 
-        m_configuration.write(to_addr(EEPROMAddress::COLOR_R), color.r);
-        m_configuration.write(to_addr(EEPROMAddress::COLOR_G), color.g);
-        m_configuration.write(to_addr(EEPROMAddress::COLOR_B), color.b);
+        m_configuration.write(to_addr(EEPROMAddress::COLOR_R), color.r, 1000);
+        m_configuration.write(to_addr(EEPROMAddress::COLOR_G), color.g, 1000);
+        m_configuration.write(to_addr(EEPROMAddress::COLOR_B), color.b, 1000);
     }
 }

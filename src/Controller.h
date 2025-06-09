@@ -6,6 +6,12 @@
 
 namespace siebenuhr {
 
+    enum class RenderState : int {
+        SPLASH = 0,
+        WIFI,
+        CLOCK
+    };
+
     class Controller : public siebenuhr_core::BaseController {
     public:
         void loadConfiguration(bool forceFirstTimeSetup = false);
@@ -14,13 +20,26 @@ namespace siebenuhr {
 
         void update() override;
 
+        void setRenderState(RenderState state, const std::string& text = "")
+        {
+            m_renderState = state;
+            m_renderStateChange = millis();
+            if (text.length() != 0)
+            {
+                m_display->setText(text);
+            }
+        }
+
     protected: 
-        bool handleLongPressReset() override;
+        void onButtonLongPress() override;
         void onBrightnessChange(int brightness) override;
         void onColorChange(CRGB color) override;
 
     private:
         Configuration m_configuration;
+
+        RenderState m_renderState = RenderState::SPLASH;
+        unsigned long m_renderStateChange = 0;
 
         bool m_wifiEnabled = false;
         bool m_NTPEnabled = false;
