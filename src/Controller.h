@@ -34,6 +34,8 @@ namespace siebenuhr {
         void onButtonLongPress() override;
         void onBrightnessChange(int brightness) override;
         void onColorChange(CRGB color) override;
+        void onPersonalityChange(siebenuhr_core::PersonalityType personality) override;
+
 
     private:
         Configuration m_configuration;

@@ -19,8 +19,9 @@ namespace siebenuhr {
             m_configuration.write(to_addr(EEPROMAddress::INITIALISED), 1);
             m_configuration.write(to_addr(EEPROMAddress::TIMEZONE_ID), DEFAULT_TIMEZONE);
             m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), siebenuhr_core::constants::DefaultBrightness);
-            m_configuration.write(to_addr(EEPROMAddress::COLOR_R), siebenuhr_core::constants::DEFAULT_COLOR.r);
+            m_configuration.write(to_addr(EEPROMAddress::PERSONALITY), siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL);
             m_configuration.write(to_addr(EEPROMAddress::COLOR_G), siebenuhr_core::constants::DEFAULT_COLOR.g);
+            m_configuration.write(to_addr(EEPROMAddress::COLOR_B), siebenuhr_core::constants::DEFAULT_COLOR.b);
             m_configuration.write(to_addr(EEPROMAddress::COLOR_B), siebenuhr_core::constants::DEFAULT_COLOR.b);
             m_configuration.writeString(to_addr(EEPROMAddress::WIFI_SSID), "undefined1");
             m_configuration.writeString(to_addr(EEPROMAddress::WIFI_PSWD), "undefined2");
@@ -32,7 +33,16 @@ namespace siebenuhr {
         LOG_I("Clock settings: col=RGB(%d, %d, %d) brightness=%d", color.r, color.g, color.b, brightness);
 
         setBrightness(brightness);
-        setColor(siebenuhr_core::Color::fromCRGB(color));
+
+        int personality = m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
+        if (personality == siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL)
+        {
+            setColor(siebenuhr_core::Color::fromCRGB(color));
+        }
+        else
+        {
+            setColor(siebenuhr_core::Color::fromCRGB(siebenuhr_core::constants::DEFAULT_COLOR));
+        }
     } 
 
     bool Controller::initializeWifi(bool enable) 
@@ -120,11 +130,15 @@ namespace siebenuhr {
                 LOG_I("Initializing 7Uhr...");
                 if (initializeWifi(true)) 
                 {
-                    LOG_E("7Uhr wifi setup successful.");
+                    LOG_I("7Uhr wifi setup successful.");
                     if (initializeNTP(true))
                     {
-                        LOG_E("7Uhr NTP setup successful.");    
+                        LOG_I("7Uhr NTP setup successful.");    
                         setRenderState(RenderState::CLOCK);
+
+                        // switch to personatlity from the configuration
+                        siebenuhr_core::PersonalityType personality = (siebenuhr_core::PersonalityType)m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
+                        setPersonality(personality);
                     }        
                 }
             }
@@ -166,6 +180,8 @@ namespace siebenuhr {
 
     void Controller::onButtonLongPress()
     { 
+        // reset configuration of the clock
+        loadConfiguration(true);
         setRenderState(RenderState::WIFI, "uiFi");
     }
 
@@ -176,8 +192,15 @@ namespace siebenuhr {
 
     void Controller::onColorChange(CRGB color)
     { 
+        LOG_I("Color change... %d %d %d", color.r, color.g, color.b);
         m_configuration.write(to_addr(EEPROMAddress::COLOR_R), color.r, 1000);
         m_configuration.write(to_addr(EEPROMAddress::COLOR_G), color.g, 1000);
         m_configuration.write(to_addr(EEPROMAddress::COLOR_B), color.b, 1000);
+    }
+
+    void Controller::onPersonalityChange(siebenuhr_core::PersonalityType personality)
+    { 
+        LOG_I("Personality change... %d", personality);
+        m_configuration.write(to_addr(EEPROMAddress::PERSONALITY), siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);
     }
 }

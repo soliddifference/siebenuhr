@@ -1,4 +1,5 @@
 #include "configuration.h"
+#include "siebenuhr_logger.h"
 
 namespace siebenuhr {
 
@@ -102,6 +103,6 @@ namespace siebenuhr {
         // Reset the deferred write buffer
         deferredWriteCount = 0;
         lastFlushTime = currentTime;
+        LOG_I("Configuration flushed to EEPROM.");
     } 
-
 }

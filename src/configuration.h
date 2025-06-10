@@ -12,6 +12,7 @@ namespace siebenuhr {
         INITIALISED = 0,
         TIMEZONE_ID,
         BRIGHTNESS,
+        PERSONALITY,
         COLOR_R,
         COLOR_G,
         COLOR_B,
