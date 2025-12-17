@@ -39,11 +39,13 @@ namespace siebenuhr {
         if (personality == siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL)
         {
             LOG_I("- personality = COLORWHEEL");
-            setColor(siebenuhr_core::Color::fromCRGB(color));
+            // setColor(siebenuhr_core::Color::fromCRGB(color));
+            setColor(siebenuhr_core::Color::fromCRGB(siebenuhr_core::constants::DEFAULT_COLOR));
         }
         else
         {
             LOG_I("- personality = FIXED COLOR");
+            // setColor(siebenuhr_core::Color::fromCRGB(color));
             setColor(siebenuhr_core::Color::fromCRGB(siebenuhr_core::constants::DEFAULT_COLOR));
         }
     } 
