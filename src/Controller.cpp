@@ -13,9 +13,8 @@ namespace siebenuhr {
         int initialized = m_configuration.read(to_addr(EEPROMAddress::INITIALISED));
         if (forceFirstTimeSetup || initialized != 1)
         {
-            m_configuration.reset();
-
             LOG_I("Initializing default configuration settings.");
+            m_configuration.reset();
             m_configuration.write(to_addr(EEPROMAddress::INITIALISED), 1);
             m_configuration.write(to_addr(EEPROMAddress::TIMEZONE_ID), DEFAULT_TIMEZONE);
             m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), siebenuhr_core::constants::DefaultBrightness);
@@ -30,17 +29,21 @@ namespace siebenuhr {
 
         int brightness = m_configuration.read(to_addr(EEPROMAddress::BRIGHTNESS));
         CRGB color = CRGB(m_configuration.read(to_addr(EEPROMAddress::COLOR_R)), m_configuration.read(to_addr(EEPROMAddress::COLOR_G)), m_configuration.read(to_addr(EEPROMAddress::COLOR_B)));
-        LOG_I("Clock settings: col=RGB(%d, %d, %d) brightness=%d", color.r, color.g, color.b, brightness);
+        LOG_I("Configuration:");
+        LOG_I("- cololor = RGB(%d, %d, %d)", color.r, color.g, color.b);
+        LOG_I("- brightness = %d", brightness);
 
         setBrightness(brightness);
 
         int personality = m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
         if (personality == siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL)
         {
+            LOG_I("- personality = COLORWHEEL");
             setColor(siebenuhr_core::Color::fromCRGB(color));
         }
         else
         {
+            LOG_I("- personality = FIXED COLOR");
             setColor(siebenuhr_core::Color::fromCRGB(siebenuhr_core::constants::DEFAULT_COLOR));
         }
     } 
@@ -117,7 +120,7 @@ namespace siebenuhr {
         return true;
     }
 
-    void Controller::update()
+    void Controller::update(bool doHandleUserInput)
     {
         if (m_wifiEnabled && m_NTPEnabled) {
             events(); // give the ezTime-lib it's processing cycle
@@ -137,7 +140,10 @@ namespace siebenuhr {
                         setRenderState(RenderState::CLOCK);
 
                         // switch to personatlity from the configuration
-                        siebenuhr_core::PersonalityType personality = (siebenuhr_core::PersonalityType)m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
+                        // siebenuhr_core::PersonalityType personality = (siebenuhr_core::PersonalityType)m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
+
+                        // Update: always set to COLORWHEEL on startup
+                        siebenuhr_core::PersonalityType personality = siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL;
                         setPersonality(personality);
                     }        
                 }
@@ -174,13 +180,16 @@ namespace siebenuhr {
             
         }
 
+        doHandleUserInput = (m_renderState != RenderState::SPLASH && m_renderState != RenderState::WIFI);
+
         m_configuration.flushDeferredSaving();
-        BaseController::update();
+        BaseController::update(doHandleUserInput);
     }
 
     void Controller::onButtonLongPress()
     { 
         // reset configuration of the clock
+        LOG_I("!!!!! Long press detected - resetting configuration to defaults !!!!!");
         loadConfiguration(true);
         setRenderState(RenderState::WIFI, "uiFi");
     }

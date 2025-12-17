@@ -18,7 +18,7 @@ namespace siebenuhr {
         bool initializeWifi(bool enable);
         bool initializeNTP(bool enable, int timezoneId = -1);
 
-        void update() override;
+        void update(bool doHandleUserInput = true) override;
 
         void setRenderState(RenderState state, const std::string& text = "")
         {
