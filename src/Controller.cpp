@@ -8,7 +8,7 @@
 
 namespace siebenuhr {
 
-    void Controller::loadConfiguration(bool forceFirstTimeSetup) 
+    void Controller::loadConfiguration(bool forceFirstTimeSetup)
     {
         int initialized = m_configuration.read(to_addr(EEPROMAddress::INITIALISED));
         if (forceFirstTimeSetup || initialized != 1)
@@ -48,9 +48,9 @@ namespace siebenuhr {
             // setColor(siebenuhr_core::Color::fromCRGB(color));
             setColor(siebenuhr_core::Color::fromCRGB(siebenuhr_core::constants::DEFAULT_COLOR));
         }
-    } 
+    }
 
-    bool Controller::initializeWifi(bool enable) 
+    bool Controller::initializeWifi(bool enable)
     {
         WiFi.setHostname("7uhr");
         if (enable) {
@@ -68,7 +68,7 @@ namespace siebenuhr {
             if (SSID.length() != 0) {
                 WiFi.begin(SSID.c_str(), PSWD.c_str());
                 LOG_I("Connecting to WiFi (%s)..", SSID.c_str());
-                
+
                 int ConnectRetries = 0;
                 while (WiFi.status() != WL_CONNECTED && ConnectRetries < 20) {
                     ConnectRetries++;
@@ -81,9 +81,9 @@ namespace siebenuhr {
                     m_wifiEnabled = true;
                     LOG_I("Wifi connected.");
                     return true;
-                } 
-            }	
-        } 
+                }
+            }
+        }
 
         LOG_E("Wifi setup failed!");
 
@@ -96,11 +96,11 @@ namespace siebenuhr {
         return false;
     }
 
-    bool Controller::initializeNTP(bool enable, int timezoneId) 
+    bool Controller::initializeNTP(bool enable, int timezoneId)
     {
         if (m_wifiEnabled && enable) {
             if (timezoneId == -1) {
-                timezoneId = m_configuration.read(to_addr(EEPROMAddress::TIMEZONE_ID));                
+                timezoneId = m_configuration.read(to_addr(EEPROMAddress::TIMEZONE_ID));
             }
             String sTimezone = timezones[timezoneId].name;
             LOG_I("Timezone(%d) : %s", timezoneId, sTimezone.c_str());
@@ -112,12 +112,12 @@ namespace siebenuhr {
                 delay(100);
             }
             waitForSync();
-            
+
             m_ezTimezone.setLocation(sTimezone);
             m_ezTimezone.setDefault();
 
             m_NTPEnabled = enable;
-        } 
+        }
 
         return true;
     }
@@ -130,32 +130,39 @@ namespace siebenuhr {
 
         if (m_renderState == RenderState::SPLASH)
         {
-            if (millis()-m_renderStateChange > 2000) 
+            if (millis()-m_renderStateChange > 2000)
             {
                 LOG_I("Initializing 7Uhr...");
-                if (initializeWifi(true)) 
+                if (initializeWifi(true))
                 {
                     LOG_I("7Uhr wifi setup successful.");
-                    if (initializeNTP(true))
-                    {
-                        LOG_I("7Uhr NTP setup successful.");    
-                        setRenderState(RenderState::CLOCK);
-
-                        // switch to personatlity from the configuration
-                        // siebenuhr_core::PersonalityType personality = (siebenuhr_core::PersonalityType)m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
-
-                        // Update: always set to COLORWHEEL on startup
-                        siebenuhr_core::PersonalityType personality = siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL;
-                        setPersonality(personality);
-                    }        
+                    setRenderState(RenderState::NTP, "ntp");
                 }
             }
         }
         else if (m_renderState == RenderState::WIFI)
         {
-            if (millis()-m_renderStateChange > 2000) 
+            if (millis()-m_renderStateChange > 2000)
             {
                 APController::getInstance()->begin(&m_configuration);
+            }
+        }
+        else if (m_renderState == RenderState::NTP)
+        {
+            if (millis() - m_renderStateChange > 2000)
+            {
+                if (initializeNTP(true))
+                {
+                    LOG_I("7Uhr NTP setup successful.");
+                    setRenderState(RenderState::CLOCK);
+
+                    // switch to personatlity from the configuration
+                    // siebenuhr_core::PersonalityType personality = (siebenuhr_core::PersonalityType)m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
+
+                    // Update: always set to COLORWHEEL on startup
+                    siebenuhr_core::PersonalityType personality = siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL;
+                    setPersonality(personality);
+                }
             }
         }
         else
@@ -179,7 +186,6 @@ namespace siebenuhr {
                     setTime(m_currentHours, m_currentMinutes);
                 }
             }
-            
         }
 
         doHandleUserInput = (m_renderState != RenderState::SPLASH && m_renderState != RenderState::WIFI);
@@ -189,7 +195,7 @@ namespace siebenuhr {
     }
 
     void Controller::onButtonLongPress()
-    { 
+    {
         // reset configuration of the clock
         LOG_I("!!!!! Long press detected - resetting configuration to defaults !!!!!");
         loadConfiguration(true);
@@ -197,12 +203,12 @@ namespace siebenuhr {
     }
 
     void Controller::onBrightnessChange(int brightness)
-    { 
+    {
         m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), brightness, 1000);
     }
 
     void Controller::onColorChange(CRGB color)
-    { 
+    {
         LOG_I("Color change... %d %d %d", color.r, color.g, color.b);
         m_configuration.write(to_addr(EEPROMAddress::COLOR_R), color.r, 1000);
         m_configuration.write(to_addr(EEPROMAddress::COLOR_G), color.g, 1000);
@@ -210,7 +216,7 @@ namespace siebenuhr {
     }
 
     void Controller::onPersonalityChange(siebenuhr_core::PersonalityType personality)
-    { 
+    {
         LOG_I("Personality change... %d", personality);
         m_configuration.write(to_addr(EEPROMAddress::PERSONALITY), siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);
     }
