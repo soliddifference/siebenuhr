@@ -9,6 +9,7 @@ namespace siebenuhr {
     enum class RenderState : int {
         SPLASH = 0,
         WIFI,
+        NTP,
         CLOCK
     };
 
@@ -30,7 +31,7 @@ namespace siebenuhr {
             }
         }
 
-    protected: 
+    protected:
         void onButtonLongPress() override;
         void onBrightnessChange(int brightness) override;
         void onColorChange(CRGB color) override;
@@ -48,7 +49,7 @@ namespace siebenuhr {
 
         Timezone m_ezTimezone;
         int m_currentHours = -1;
-        int m_currentMinutes = -1; 
+        int m_currentMinutes = -1;
     };
 
 };
