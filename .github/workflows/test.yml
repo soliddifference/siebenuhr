@@ -1,0 +1,81 @@
+# CI workflow for siebenuhr firmware
+# Runs native unit tests and build check on push and pull requests
+
+name: Tests
+
+on:
+  push:
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+jobs:
+  native-tests:
+    name: Native Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-${{ runner.os }}-
+      
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+      
+      - name: Run native tests
+        run: pio test -e native -v
+
+  build-check:
+    name: Build Check (ESP32)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Checkout siebenuhr_core library
+        uses: actions/checkout@v4
+        with:
+          repository: soliddifference/siebenuhr_core
+          # TODO: Change to 'v1.1.0' tag after core library release
+          ref: refactor-1.1.0
+          path: tmp/siebenuhr_core
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-build-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-build-${{ runner.os }}-
+      
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+      
+      - name: Build firmware
+        run: pio run -e esp32doit-devkit-v1
