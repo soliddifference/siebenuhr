@@ -1,72 +1,95 @@
-# SIEBENUHR
+# Siebenuhr
 
-### A museum-quality modern take on the classic 7-segment clock, enlarged to ridiculous proportions.
+[![Tests](https://github.com/soliddifference/siebenuhr/actions/workflows/test.yml/badge.svg)](https://github.com/soliddifference/siebenuhr/actions/workflows/test.yml)
 
-### Made from high quality materials, the gorgeous color provided by the latest in professional color-balanced LED illumination. 
+> This repository contains the open-source firmware for the Siebenuhr wall clock and mini clock. If you're using Home Assistant, we have [an ESPHome integration](https://github.com/soliddifference/siebenuhr_esphome). Both can be ordered from the web shop at [soliddifference.com](https://soliddifference.com/).
 
-###  More than just a clock, SEIBENUHR becomes a centerpiece for your home, providing feedback through color and animation. It’s able to react to motion, daytime, the weather and can even integrate seamlessly with Home Assistant to provide alarms and visual notifications.
+## The Clocks
 
-![clock lit up](https://github.com/somebox/siebenuhr2022/raw/main/rsc/images/Siebenuhr_BW-006_framed.jpg)
+Made from high quality materials with gorgeous color provided by professional color-balanced LED illumination. More than just a clock, Siebenuhr becomes a centerpiece for your home, providing feedback through color and animation.
 
-## Building
+### **Siebenuhr MK1**
 
-### Prerequisites
+A museum-quality modern take on the classic 7-segment clock, enlarged to ridiculous proportions.
 
+![clock lit up](/hardware/mk1.jpg)
+
+### **Siebenuhr Mini**
+
+A smaller version of Siebenuhr, perfect for desks and bedside tables.
+
+![clock lit up](/hardware/miniclock.jpg)
+
+## Requirements
+
+- ESP32 (tested with ESP32-DOIT-DEVKIT-V1)
 - PlatformIO Core or PlatformIO IDE extension for VS Code
-- Python 3.x (for PlatformIO)
+- Python 3.x
 
-### Build Steps
+## Quick Start
 
-1. Clone the repository with its dependencies
-2. Open the `siebenuhr` folder in PlatformIO
-3. **Important**: Modify the ESPAsyncWiFiManager library dependency:
-   - Navigate to `.pio/libdeps/esp32doit-devkit-v1/ESPAsyncWiFiManager/src/ESPAsyncWiFiManager.h`
-   - Change the `AsyncWiFiManagerParameter` class member variables from `private` to `public` (around line 95-100)
-   - This is required because the project customizes the captive portal UI and needs direct access to these members
-4. Build the project:
-   ```bash
-   pio run
-   ```
-5. Upload to device:
-   ```bash
-   pio run --target upload
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/soliddifference/siebenuhr.git
+cd siebenuhr
+
+# For development: clone siebenuhr_core into tmp/
+git clone https://github.com/soliddifference/siebenuhr_core.git tmp/siebenuhr_core
+
+# Build for Mini clock
+pio run -e esp32-mini
+
+# Build for Regular clock
+pio run -e esp32-regular
+
+# Upload to device (replace with your environment)
+pio run -e esp32-mini -t upload
+
+# Monitor serial output
+pio device monitor
+```
 
 ## Configuration
 
-### Clock Models
+### Clock Type
 
-SIEBENUHR supports different clock models with varying LED counts. You need to configure your build for your specific hardware:
+Select your clock type by building the appropriate environment:
 
-#### 1. Clock Type Selection
+```bash
+# Mini clock (4 LEDs per segment, 112 total)
+pio run -e esp32-mini
 
-Edit `src/siebenuhr.cpp` to set your clock type in the `setup()` function:
-
-```cpp
-// For MINI clock (4 LEDs per segment)
-g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_MINI);
-
-// For REGULAR/BIG clock (11 or 17 LEDs per segment)
-g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_REGULAR);
+# Regular clock (17 LEDs per segment, 476 total)
+pio run -e esp32-regular
 ```
 
-#### 2. LED Count for Regular Clock
+Each environment sets the appropriate `CLOCK_TYPE_MINI` or `CLOCK_TYPE_REGULAR` build flag.
 
-If you have a REGULAR clock, you also need to configure the LED count per segment in `siebenuhr_core/src/siebenuhr_core.h`:
+### Build Flags
 
-```cpp
-// For newer models with 17 LEDs per segment
-constexpr int RegularLedsPerSegment = 17;
+Configure features in `platformio.ini` under the appropriate environment:
 
-// For older models with 11 LEDs per segment
-// constexpr int RegularLedsPerSegment = 11;
+```ini
+build_flags = 
+    -D BUILD_CLOCK_MINI=1                  ; or BUILD_CLOCK_REGULAR=1
+    -D SENSOR_READ_INTERVAL_MS=10000       ; Sensor polling interval (ms)
+    -D VERBOSE_LOGGING=1                   ; Enable DEBUG level logging
+    -D POWER_MONITORING_ENABLED=1          ; Enable INA219 power logging
+    ; -D AUTO_BRIGHTNESS_ENABLED=1         ; Enable BH1750 auto-brightness
 ```
 
-Comment/uncomment the appropriate line based on your hardware version.
+| Flag | Default | Description |
+|------|---------|-------------|
+| `BUILD_CLOCK_MINI` | - | Build for Mini clock (4 LEDs/segment) |
+| `BUILD_CLOCK_REGULAR` | - | Build for Regular clock (17 LEDs/segment) |
+| `SENSOR_READ_INTERVAL_MS` | 10000 | How often to read I2C sensors |
+| `VERBOSE_LOGGING` | off | Enable DEBUG level log output |
+| `POWER_MONITORING_ENABLED` | off | Log voltage/current from INA219 |
+| `AUTO_BRIGHTNESS_ENABLED` | off | Adjust brightness from BH1750 ambient light |
 
-#### 3. Default Personality
+### Display Personalities
 
-You can also set the default color personality in `src/siebenuhr.cpp`:
+Set the default personality in `src/siebenuhr.cpp`:
 
 ```cpp
 g_controller->setPersonality(siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);
@@ -76,11 +99,81 @@ g_controller->setPersonality(siebenuhr_core::PersonalityType::PERSONALITY_MOSAIK
 g_controller->setPersonality(siebenuhr_core::PersonalityType::PERSONALITY_GLITTER);
 ```
 
-### Development Notes
+## WiFi Setup
 
-When developing the library and the firmware at the same time, the lib_dependency needs to be updated manually with:
+On first boot (or after long-press reset), the clock creates an access point named `SiebenuhrAP`. Connect to it and configure your WiFi credentials and timezone via the captive portal at `http://192.168.4.1`.
 
-```cmd
-pio lib update
+## Development
+
+### Setup
+
+```bash
+# Install PlatformIO
+pip install -r requirements.txt
 ```
 
+### Project Structure
+
+```
+siebenuhr/
+├── src/                  # Firmware source
+│   ├── siebenuhr.cpp     # Main entry point
+│   ├── Controller.*      # Clock controller (extends siebenuhr_core)
+│   ├── configuration.*   # Persistent settings (ESP32 Preferences)
+│   ├── accesspoint.*     # WiFi captive portal
+│   └── timezone.h        # Timezone definitions
+├── test/                 # Native unit tests
+├── tmp/                  # Local siebenuhr_core (gitignored)
+└── platformio.ini
+```
+
+### Build Environments
+
+| Environment | Clock Type | LEDs/Segment | Total LEDs |
+|-------------|------------|--------------|------------|
+| `esp32-mini` | Mini | 4 | 112 |
+| `esp32-regular` | Regular | 17 | 476 |
+| `native` | - | - | Unit tests only |
+
+### Dependencies
+
+This firmware depends on [siebenuhr_core](https://github.com/soliddifference/siebenuhr_core) for display rendering, personalities, and input handling.
+
+**For development** (local library):
+```ini
+lib_extra_dirs = tmp
+```
+
+**For release** (from GitHub):
+```ini
+lib_deps += https://github.com/soliddifference/siebenuhr_core.git#v1.1.0
+```
+
+### Running Tests
+
+Unit tests run on your computer (not on ESP32):
+
+```bash
+# Run all tests
+pio test -e native
+
+# Run specific test suite
+pio test -e native -f test_configuration
+
+# Verbose output
+pio test -e native -v
+```
+
+## Version
+
+Current version: **1.1.0** (defined in `src/Controller.h`)
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Contributing
+
+Contributions welcome! Please fork and submit a pull request.
