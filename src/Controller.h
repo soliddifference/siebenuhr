@@ -4,6 +4,8 @@
 #include "configuration.h"
 #include <ezTime.h>
 
+#define SIEBENUHR_VERSION "1.1.0"
+
 namespace siebenuhr {
 
     enum class RenderState : int {
@@ -20,6 +22,9 @@ namespace siebenuhr {
         bool initializeNTP(bool enable, int timezoneId = -1);
 
         void update(bool doHandleUserInput = true) override;
+        
+        // Override to add logarithmic scaling and rate limiting
+        void setBrightness(int value);
 
         void setRenderState(RenderState state, const std::string& text = "")
         {
@@ -37,12 +42,15 @@ namespace siebenuhr {
         void onColorChange(CRGB color) override;
         void onPersonalityChange(siebenuhr_core::PersonalityType personality) override;
 
-
     private:
+        // Logarithmic brightness mapping (volume-knob feel)
+        int applyLogBrightnessMapping(int linearInput);
+        
         Configuration m_configuration;
 
         RenderState m_renderState = RenderState::SPLASH;
         unsigned long m_renderStateChange = 0;
+        unsigned long m_lastBrightnessChange = 0;
 
         bool m_wifiEnabled = false;
         bool m_NTPEnabled = false;

@@ -5,6 +5,7 @@
 #include "siebenuhr_color.h"
 
 #include <WiFi.h>
+#include <cmath>
 
 namespace siebenuhr {
 
@@ -15,12 +16,13 @@ namespace siebenuhr {
         {
             LOG_I("Initializing default configuration settings.");
             m_configuration.reset();
-            m_configuration.write(to_addr(EEPROMAddress::INITIALISED), 1);
+            // INITIALIZED must be written immediately (delay=0) - it's critical
+            m_configuration.write(to_addr(EEPROMAddress::INITIALISED), 1, 0);
             m_configuration.write(to_addr(EEPROMAddress::TIMEZONE_ID), DEFAULT_TIMEZONE);
             m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), siebenuhr_core::constants::DefaultBrightness);
             m_configuration.write(to_addr(EEPROMAddress::PERSONALITY), siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL);
+            m_configuration.write(to_addr(EEPROMAddress::COLOR_R), siebenuhr_core::constants::DEFAULT_COLOR.r);
             m_configuration.write(to_addr(EEPROMAddress::COLOR_G), siebenuhr_core::constants::DEFAULT_COLOR.g);
-            m_configuration.write(to_addr(EEPROMAddress::COLOR_B), siebenuhr_core::constants::DEFAULT_COLOR.b);
             m_configuration.write(to_addr(EEPROMAddress::COLOR_B), siebenuhr_core::constants::DEFAULT_COLOR.b);
             m_configuration.writeString(to_addr(EEPROMAddress::WIFI_SSID), "undefined1");
             m_configuration.writeString(to_addr(EEPROMAddress::WIFI_PSWD), "undefined2");
@@ -73,7 +75,7 @@ namespace siebenuhr {
                 while (WiFi.status() != WL_CONNECTED && ConnectRetries < 20) {
                     ConnectRetries++;
                     LOG_I(".. retry #%d", ConnectRetries);
-                    delay(200);
+                    delay(500);
                 }
 
                 if (WiFi.status() == WL_CONNECTED) {
@@ -142,9 +144,20 @@ namespace siebenuhr {
         }
         else if (m_renderState == RenderState::WIFI)
         {
-            if (millis()-m_renderStateChange > 2000)
+            // Only start AP once when entering WIFI state
+            // The AP will restart the device on success, or stay in portal mode
+            static bool apStarted = false;
+            if (!apStarted && millis()-m_renderStateChange > 2000)
             {
-                APController::getInstance()->begin(&m_configuration);
+                apStarted = true;
+                if (APController::getInstance()->begin(&m_configuration)) {
+                    // Config saved and device will restart (this line won't be reached)
+                } else {
+                    // Portal timed out without config - restart device to retry
+                    LOG_I("AP portal closed without config, restarting...");
+                    delay(500);
+                    ESP.restart();
+                }
             }
         }
         else if (m_renderState == RenderState::NTP)
@@ -188,7 +201,8 @@ namespace siebenuhr {
             }
         }
 
-        doHandleUserInput = (m_renderState != RenderState::SPLASH && m_renderState != RenderState::WIFI);
+        // Allow button input in WIFI state so user can trigger long-press reset
+        doHandleUserInput = (m_renderState != RenderState::SPLASH);
 
         m_configuration.flushDeferredSaving();
         BaseController::update(doHandleUserInput);
@@ -219,5 +233,38 @@ namespace siebenuhr {
     {
         LOG_I("Personality change... %d", personality);
         m_configuration.write(to_addr(EEPROMAddress::PERSONALITY), siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);
+    }
+
+    // Logarithmic mapping for volume-knob feel
+    // More resolution at low brightness, compressed at high brightness
+    int Controller::applyLogBrightnessMapping(int linearInput)
+    {
+        if (linearInput <= 1) return 1;
+        if (linearInput >= 255) return 255;
+        
+        // Use log curve: more input range dedicated to low output values
+        // Formula: output = 255 * (log(input) / log(255))
+        // This gives ~50% of input range to first 16 brightness levels
+        float normalized = (float)linearInput / 255.0f;
+        float logged = log10(1.0f + normalized * 9.0f) / log10(10.0f);  // log scale 1-10
+        int output = (int)(logged * 255.0f);
+        
+        return siebenuhr_core::clamp(output, 1, 255);
+    }
+
+    void Controller::setBrightness(int value)
+    {
+        // Rate limit: minimum 50ms between brightness changes for smoother control
+        unsigned long now = millis();
+        if (now - m_lastBrightnessChange < 50) {
+            return;  // Skip this update, too fast
+        }
+        m_lastBrightnessChange = now;
+
+        // Apply logarithmic mapping for better low-end control
+        int mappedValue = applyLogBrightnessMapping(value);
+        
+        // Call base class with mapped value
+        BaseController::setBrightness(mappedValue);
     }
 }
