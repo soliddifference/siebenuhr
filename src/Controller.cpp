@@ -246,7 +246,10 @@ namespace siebenuhr {
         float logged = log10(1.0f + normalized * 9.0f) / log10(10.0f);  // log scale 1-10
         int output = (int)(logged * 255.0f);
         
-        return siebenuhr_core::clamp(output, 1, 255);
+        // Clamp output to valid brightness range
+        if (output < 1) return 1;
+        if (output > 255) return 255;
+        return output;
     }
 
     void Controller::setBrightness(int value)

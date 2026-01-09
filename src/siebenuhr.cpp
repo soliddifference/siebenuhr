@@ -3,7 +3,19 @@
 
 siebenuhr::Controller *g_controller = nullptr;
 
+// ============================================================================
 // Build flags for optional features (set in platformio.ini)
+// ============================================================================
+
+// Clock type - exactly one must be defined
+#if !defined(BUILD_CLOCK_MINI) && !defined(BUILD_CLOCK_REGULAR)
+#error "Must define either BUILD_CLOCK_MINI or BUILD_CLOCK_REGULAR in platformio.ini"
+#endif
+
+#if defined(BUILD_CLOCK_MINI) && defined(BUILD_CLOCK_REGULAR)
+#error "Cannot define both BUILD_CLOCK_MINI and BUILD_CLOCK_REGULAR"
+#endif
+
 #ifndef AUTO_BRIGHTNESS_ENABLED
 #define AUTO_BRIGHTNESS_ENABLED 0
 #endif
@@ -20,14 +32,24 @@ void setup() {
     Serial.begin(115200);
 
     g_controller = new siebenuhr::Controller();
+    
+    // Initialize with clock type from build flag
+    #if defined(BUILD_CLOCK_MINI)
     g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_MINI);
+    #else
+    g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_REGULAR);
+    #endif
 
     // Set log level after initialize() since Logger::init() resets it to INFO
     #if VERBOSE_LOGGING
     g_controller->setLogLevel(static_cast<int>(siebenuhr_core::CoreLogLevel::DEBUG));
     #endif
 
+    #if defined(BUILD_CLOCK_MINI)
+    LOG_I("Siebenuhr Mini v%s (core v%s)", SIEBENUHR_VERSION, SIEBENUHR_CORE_VERSION);
+    #else
     LOG_I("Siebenuhr v%s (core v%s)", SIEBENUHR_VERSION, SIEBENUHR_CORE_VERSION);
+    #endif
 
     g_controller->loadConfiguration();
     

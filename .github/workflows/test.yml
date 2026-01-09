@@ -1,5 +1,5 @@
 # CI workflow for siebenuhr firmware
-# Runs native unit tests and build check on push and pull requests
+# Runs native unit tests and build checks for all clock variants
 
 name: Tests
 
@@ -42,8 +42,15 @@ jobs:
         run: pio test -e native -v
 
   build-check:
-    name: Build Check (ESP32)
+    name: Build ${{ matrix.variant }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - variant: Mini
+            env: esp32-mini
+          - variant: Regular
+            env: esp32-regular
     
     steps:
       - name: Checkout repository
@@ -77,5 +84,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install platformio
       
-      - name: Build firmware
-        run: pio run -e esp32doit-devkit-v1
+      - name: Build firmware (${{ matrix.variant }})
+        run: pio run -e ${{ matrix.env }}

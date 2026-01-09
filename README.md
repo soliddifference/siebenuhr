@@ -34,11 +34,14 @@ cd siebenuhr
 # For development: clone siebenuhr_core into tmp/
 git clone https://github.com/soliddifference/siebenuhr_core.git tmp/siebenuhr_core
 
-# Build
-pio run
+# Build for Mini clock
+pio run -e esp32-mini
 
-# Upload to device
-pio run -t upload
+# Build for Regular clock
+pio run -e esp32-regular
+
+# Upload to device (replace with your environment)
+pio run -e esp32-mini -t upload
 
 # Monitor serial output
 pio device monitor
@@ -48,30 +51,35 @@ pio device monitor
 
 ### Clock Type
 
-Edit `src/siebenuhr.cpp` to set your clock type:
+Select your clock type by building the appropriate environment:
 
-```cpp
-// MINI clock (4 LEDs per segment, 112 total)
-g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_MINI);
+```bash
+# Mini clock (4 LEDs per segment, 112 total)
+pio run -e esp32-mini
 
-// REGULAR clock (17 LEDs per segment, 476 total)
-g_controller->initialize(siebenuhr_core::ClockType::CLOCK_TYPE_REGULAR);
+# Regular clock (17 LEDs per segment, 476 total)
+pio run -e esp32-regular
 ```
+
+Each environment sets the appropriate `CLOCK_TYPE_MINI` or `CLOCK_TYPE_REGULAR` build flag.
 
 ### Build Flags
 
-Configure features in `platformio.ini`:
+Configure features in `platformio.ini` under the appropriate environment:
 
 ```ini
 build_flags = 
-    -D SENSOR_READ_INTERVAL_MS=10000      ; Sensor polling interval (ms)
-    -D VERBOSE_LOGGING=1                  ; Enable DEBUG level logging
-    -D POWER_MONITORING_ENABLED=1         ; Enable INA219 power logging
-    ; -D AUTO_BRIGHTNESS_ENABLED=1        ; Enable BH1750 auto-brightness
+    -D BUILD_CLOCK_MINI=1                  ; or BUILD_CLOCK_REGULAR=1
+    -D SENSOR_READ_INTERVAL_MS=10000       ; Sensor polling interval (ms)
+    -D VERBOSE_LOGGING=1                   ; Enable DEBUG level logging
+    -D POWER_MONITORING_ENABLED=1          ; Enable INA219 power logging
+    ; -D AUTO_BRIGHTNESS_ENABLED=1         ; Enable BH1750 auto-brightness
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `BUILD_CLOCK_MINI` | - | Build for Mini clock (4 LEDs/segment) |
+| `BUILD_CLOCK_REGULAR` | - | Build for Regular clock (17 LEDs/segment) |
 | `SENSOR_READ_INTERVAL_MS` | 10000 | How often to read I2C sensors |
 | `VERBOSE_LOGGING` | off | Enable DEBUG level log output |
 | `POWER_MONITORING_ENABLED` | off | Log voltage/current from INA219 |
@@ -116,6 +124,14 @@ siebenuhr/
 ├── tmp/                  # Local siebenuhr_core (gitignored)
 └── platformio.ini
 ```
+
+### Build Environments
+
+| Environment | Clock Type | LEDs/Segment | Total LEDs |
+|-------------|------------|--------------|------------|
+| `esp32-mini` | Mini | 4 | 112 |
+| `esp32-regular` | Regular | 17 | 476 |
+| `native` | - | - | Unit tests only |
 
 ### Dependencies
 
