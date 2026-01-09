@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "controller.h"
+#include "Controller.h"
 
 #include "accesspoint.h"
 #include "timezone.h"

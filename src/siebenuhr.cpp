@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "controller.h"
+#include "Controller.h"
 
 siebenuhr::Controller *g_controller = nullptr;
 
