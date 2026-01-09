@@ -128,7 +128,7 @@ namespace siebenuhr {
 		});
 
 		// Add parameters (only once per WiFiManager instance)
-		int curTimezoneID = config->read(to_addr(EEPROMAddress::TIMEZONE_ID));
+		int curTimezoneID = config->read(ConfigKey::TIMEZONE_ID);
 		
 		pWifiManager->addParameter(new AsyncWiFiManagerParameter("<br/>NTP config:"));
 
@@ -156,17 +156,17 @@ namespace siebenuhr {
 		
 		if (ssid.length() > 0) {
 			// User submitted config - save it regardless of connection result
-			config->writeString(to_addr(EEPROMAddress::WIFI_SSID), ssid.c_str());
+			config->writeString(ConfigKey::WIFI_SSID, ssid.c_str());
 			LOG_I("SSID: %s", ssid.c_str());
 
 			String pwd = pWifiManager->getConfiguredSTAPassword();
-			config->writeString(to_addr(EEPROMAddress::WIFI_PSWD), pwd.c_str());
+			config->writeString(ConfigKey::WIFI_PSWD, pwd.c_str());
 			LOG_I("PSWD: (saved, %d chars)", pwd.length());
 
 			if (_pCustomTZHidden != nullptr) {
 				_nSelectedTimeZoneID = String(_pCustomTZHidden->getValue()).toInt();
 				LOG_I("Timezone select: %s", timezones[_nSelectedTimeZoneID].name);
-				config->write(to_addr(EEPROMAddress::TIMEZONE_ID), _nSelectedTimeZoneID);
+				config->write(ConfigKey::TIMEZONE_ID, _nSelectedTimeZoneID);
 			}
 
 			config->flushDeferredSaving(true);

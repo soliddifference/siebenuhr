@@ -11,43 +11,45 @@ namespace siebenuhr {
 
     void Controller::loadConfiguration(bool forceFirstTimeSetup)
     {
-        int initialized = m_configuration.read(to_addr(EEPROMAddress::INITIALISED));
+        int initialized = m_configuration.read(ConfigKey::INITIALIZED);
         if (forceFirstTimeSetup || initialized != 1)
         {
             LOG_I("Initializing default configuration settings.");
             m_configuration.reset();
             // INITIALIZED must be written immediately (delay=0) - it's critical
-            m_configuration.write(to_addr(EEPROMAddress::INITIALISED), 1, 0);
-            m_configuration.write(to_addr(EEPROMAddress::TIMEZONE_ID), DEFAULT_TIMEZONE);
-            m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), siebenuhr_core::constants::DefaultBrightness);
-            m_configuration.write(to_addr(EEPROMAddress::PERSONALITY), siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL);
-            m_configuration.write(to_addr(EEPROMAddress::COLOR_R), siebenuhr_core::constants::DEFAULT_COLOR.r);
-            m_configuration.write(to_addr(EEPROMAddress::COLOR_G), siebenuhr_core::constants::DEFAULT_COLOR.g);
-            m_configuration.write(to_addr(EEPROMAddress::COLOR_B), siebenuhr_core::constants::DEFAULT_COLOR.b);
-            m_configuration.writeString(to_addr(EEPROMAddress::WIFI_SSID), "undefined1");
-            m_configuration.writeString(to_addr(EEPROMAddress::WIFI_PSWD), "undefined2");
+            m_configuration.write(ConfigKey::INITIALIZED, 1, 0);
+            m_configuration.write(ConfigKey::TIMEZONE_ID, DEFAULT_TIMEZONE);
+            m_configuration.write(ConfigKey::BRIGHTNESS, siebenuhr_core::constants::DefaultBrightness);
+            m_configuration.write(ConfigKey::PERSONALITY, siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL);
+            m_configuration.write(ConfigKey::COLOR_R, siebenuhr_core::constants::DEFAULT_COLOR.r);
+            m_configuration.write(ConfigKey::COLOR_G, siebenuhr_core::constants::DEFAULT_COLOR.g);
+            m_configuration.write(ConfigKey::COLOR_B, siebenuhr_core::constants::DEFAULT_COLOR.b);
+            m_configuration.writeString(ConfigKey::WIFI_SSID, "undefined1");
+            m_configuration.writeString(ConfigKey::WIFI_PSWD, "undefined2");
             m_configuration.flushDeferredSaving(true);
         }
 
-        int brightness = m_configuration.read(to_addr(EEPROMAddress::BRIGHTNESS));
-        CRGB color = CRGB(m_configuration.read(to_addr(EEPROMAddress::COLOR_R)), m_configuration.read(to_addr(EEPROMAddress::COLOR_G)), m_configuration.read(to_addr(EEPROMAddress::COLOR_B)));
+        int brightness = m_configuration.read(ConfigKey::BRIGHTNESS);
+        CRGB color = CRGB(
+            m_configuration.read(ConfigKey::COLOR_R),
+            m_configuration.read(ConfigKey::COLOR_G),
+            m_configuration.read(ConfigKey::COLOR_B)
+        );
         LOG_I("Configuration:");
         LOG_I("- cololor = RGB(%d, %d, %d)", color.r, color.g, color.b);
         LOG_I("- brightness = %d", brightness);
 
         setBrightness(brightness);
 
-        int personality = m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
+        int personality = m_configuration.read(ConfigKey::PERSONALITY);
         if (personality == siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL)
         {
             LOG_I("- personality = COLORWHEEL");
-            // setColor(siebenuhr_core::Color::fromCRGB(color));
             setColor(siebenuhr_core::Color::fromCRGB(siebenuhr_core::constants::DEFAULT_COLOR));
         }
         else
         {
             LOG_I("- personality = FIXED COLOR");
-            // setColor(siebenuhr_core::Color::fromCRGB(color));
             setColor(siebenuhr_core::Color::fromCRGB(siebenuhr_core::constants::DEFAULT_COLOR));
         }
     }
@@ -62,10 +64,9 @@ namespace siebenuhr {
 
             WiFi.mode(WIFI_STA);
 
-            String SSID = m_configuration.readString(to_addr(EEPROMAddress::WIFI_SSID));
-            String PSWD = m_configuration.readString(to_addr(EEPROMAddress::WIFI_PSWD));
-            LOG_I("ZU? %s", SSID.c_str());
-            LOG_I("ZP? %s", PSWD.c_str());
+            String SSID = m_configuration.readString(ConfigKey::WIFI_SSID);
+            String PSWD = m_configuration.readString(ConfigKey::WIFI_PSWD);
+            LOG_I("WiFi SSID: %s", SSID.c_str());
 
             if (SSID.length() != 0) {
                 WiFi.begin(SSID.c_str(), PSWD.c_str());
@@ -79,7 +80,6 @@ namespace siebenuhr {
                 }
 
                 if (WiFi.status() == WL_CONNECTED) {
-                    // APController::getInstance()->getNetworkInfo();
                     m_wifiEnabled = true;
                     LOG_I("Wifi connected.");
                     return true;
@@ -102,7 +102,7 @@ namespace siebenuhr {
     {
         if (m_wifiEnabled && enable) {
             if (timezoneId == -1) {
-                timezoneId = m_configuration.read(to_addr(EEPROMAddress::TIMEZONE_ID));
+                timezoneId = m_configuration.read(ConfigKey::TIMEZONE_ID);
             }
             String sTimezone = timezones[timezoneId].name;
             LOG_I("Timezone(%d) : %s", timezoneId, sTimezone.c_str());
@@ -169,10 +169,7 @@ namespace siebenuhr {
                     LOG_I("7Uhr NTP setup successful.");
                     setRenderState(RenderState::CLOCK);
 
-                    // switch to personatlity from the configuration
-                    // siebenuhr_core::PersonalityType personality = (siebenuhr_core::PersonalityType)m_configuration.read(to_addr(EEPROMAddress::PERSONALITY));
-
-                    // Update: always set to COLORWHEEL on startup
+                    // Always set to COLORWHEEL on startup
                     siebenuhr_core::PersonalityType personality = siebenuhr_core::PersonalityType::PERSONALITY_COLORWHEEL;
                     setPersonality(personality);
                 }
@@ -218,21 +215,21 @@ namespace siebenuhr {
 
     void Controller::onBrightnessChange(int brightness)
     {
-        m_configuration.write(to_addr(EEPROMAddress::BRIGHTNESS), brightness, 1000);
+        m_configuration.write(ConfigKey::BRIGHTNESS, brightness, 1000);
     }
 
     void Controller::onColorChange(CRGB color)
     {
         LOG_I("Color change... %d %d %d", color.r, color.g, color.b);
-        m_configuration.write(to_addr(EEPROMAddress::COLOR_R), color.r, 1000);
-        m_configuration.write(to_addr(EEPROMAddress::COLOR_G), color.g, 1000);
-        m_configuration.write(to_addr(EEPROMAddress::COLOR_B), color.b, 1000);
+        m_configuration.write(ConfigKey::COLOR_R, color.r, 1000);
+        m_configuration.write(ConfigKey::COLOR_G, color.g, 1000);
+        m_configuration.write(ConfigKey::COLOR_B, color.b, 1000);
     }
 
     void Controller::onPersonalityChange(siebenuhr_core::PersonalityType personality)
     {
         LOG_I("Personality change... %d", personality);
-        m_configuration.write(to_addr(EEPROMAddress::PERSONALITY), siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);
+        m_configuration.write(ConfigKey::PERSONALITY, siebenuhr_core::PersonalityType::PERSONALITY_SOLIDCOLOR);
     }
 
     // Logarithmic mapping for volume-knob feel
