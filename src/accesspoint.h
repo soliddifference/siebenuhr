@@ -1,6 +1,5 @@
 #pragma once
 
-#include "AsyncWiFiManagerParameterExt.h"
 #include <ESPAsyncWiFiManager.h>
 
 namespace siebenuhr {
@@ -27,7 +26,7 @@ namespace siebenuhr {
 
         static APController* _pInstance;
         String _sDropDownTimeZoneHTML;
-        AsyncWiFiManagerParameterExt *_pCustomTZDropdown;
+        AsyncWiFiManagerParameter *_pCustomTZDropdown;
         AsyncWiFiManagerParameter *_pCustomTZHidden;
 
         int _nSelectedTimeZoneID;
