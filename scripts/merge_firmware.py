@@ -15,7 +15,6 @@ def merge_bin(source, target, env):
     """Create a merged firmware binary for web flasher tools."""
     from os.path import join, exists
     import subprocess
-    import sys
 
     build_dir = env.subst("$BUILD_DIR")
     board = env.BoardConfig()
@@ -31,6 +30,10 @@ def merge_bin(source, target, env):
     framework_dir = platform.get_package_dir("framework-arduinoespressif32")
     boot_app0 = join(framework_dir, "tools", "partitions", "boot_app0.bin")
 
+    # Get esptool from PlatformIO's tool-esptoolpy package
+    esptool_dir = platform.get_package_dir("tool-esptoolpy")
+    esptool_py = join(esptool_dir, "esptool.py")
+
     # Output file includes environment name
     env_name = env.subst("$PIOENV")
     merged = join(build_dir, f"firmware-{env_name}-merged.bin")
@@ -42,6 +45,7 @@ def merge_bin(source, target, env):
         (boot_app0, "boot_app0"),
         (partitions, "partitions"),
         (firmware, "firmware"),
+        (esptool_py, "esptool.py"),
     ]:
         if not exists(filepath):
             missing.append(f"{name}: {filepath}")
@@ -57,9 +61,9 @@ def merge_bin(source, target, env):
     # 0x8000  - partition table
     # 0xe000  - boot_app0 (OTA data)
     # 0x10000 - application
-    # Use "python -m esptool" for cross-platform compatibility (avoids permission issues)
+    # Use PlatformIO's esptool.py from tool-esptoolpy package
     cmd = [
-        sys.executable, "-m", "esptool",
+        env.subst("$PYTHONEXE"), esptool_py,
         "--chip", mcu,
         "merge_bin",
         "-o", merged,
