@@ -15,6 +15,7 @@ def merge_bin(source, target, env):
     """Create a merged firmware binary for web flasher tools."""
     from os.path import join, exists
     import subprocess
+    import sys
 
     build_dir = env.subst("$BUILD_DIR")
     board = env.BoardConfig()
@@ -56,8 +57,9 @@ def merge_bin(source, target, env):
     # 0x8000  - partition table
     # 0xe000  - boot_app0 (OTA data)
     # 0x10000 - application
+    # Use "python -m esptool" for cross-platform compatibility (avoids permission issues)
     cmd = [
-        "esptool.py",
+        sys.executable, "-m", "esptool",
         "--chip", mcu,
         "merge_bin",
         "-o", merged,
