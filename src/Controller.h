@@ -4,7 +4,7 @@
 #include "configuration.h"
 #include <ezTime.h>
 
-#define SIEBENUHR_VERSION "1.1.0"
+#define SIEBENUHR_VERSION "1.1.1"
 
 namespace siebenuhr {
 
@@ -35,6 +35,8 @@ namespace siebenuhr {
                 m_display->setText(text);
             }
         }
+
+        Configuration* getConfiguration() { return &m_configuration; }
 
     protected:
         void onButtonLongPress() override;
