@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "controller.h"
+#include "Controller.h"
 
 #include "accesspoint.h"
 #include "timezone.h"
@@ -13,9 +13,10 @@ namespace siebenuhr {
 
 	APController* APController::_pInstance = nullptr;
 
-	AsyncWebServer server(80);
-	DNSServer dns;
-	AsyncWiFiManager wifiManager(&server, &dns);
+	// These must be created fresh each time to avoid stale state
+	AsyncWebServer* pServer = nullptr;
+	DNSServer* pDns = nullptr;
+	AsyncWiFiManager* pWifiManager = nullptr;
 
 	APController* APController::getInstance(){
 		if (APController::_pInstance == nullptr) {
@@ -63,64 +64,132 @@ namespace siebenuhr {
 	bool APController::setupAPCaptivePortal(Configuration *config) {
 		sprintf(_sIdentifier, "SiebenuhrAP");
 
-		WiFi.disconnect(true, true);
-		wifiManager.resetSettings();
-		wifiManager.setDebugOutput(false);
-
-		int curTimezoneID = config->read(to_addr(EEPROMAddress::TIMEZONE_ID));
-		if (_pCustomTZHidden == nullptr) {
-			wifiManager.addParameter(new AsyncWiFiManagerParameter("<br/>NTP config:"));
-
-			char convertedValue[6];
-			sprintf(convertedValue, "%d", curTimezoneID); // Need to convert to string to display a default value.
-			_pCustomTZHidden = new AsyncWiFiManagerParameterExt("key_custom", "Will be hidden", convertedValue, 3);
-			wifiManager.addParameter(_pCustomTZHidden); // Needs to be added before the javascript that hides it
-		} 
-
-		if (_pCustomTZDropdown == nullptr) {
-			_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
-			_pCustomTZDropdown = new AsyncWiFiManagerParameterExt(_sDropDownTimeZoneHTML.c_str());
-			wifiManager.addParameter(_pCustomTZDropdown);
-		} else {
-			// if control already exists, just update the custom HTML (initial selection of timeszone might have changed since first initialization)
-			_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
-			_pCustomTZDropdown->setCustomHTML(_sDropDownTimeZoneHTML.c_str());
+		// Clean up any previous instances to ensure fresh state
+		if (pWifiManager != nullptr) {
+			delete pWifiManager;
+			pWifiManager = nullptr;
 		}
-		
-		if (wifiManager.startConfigPortal(_sIdentifier)) {
+		if (pServer != nullptr) {
+			pServer->reset();
+			pServer->end();
+			delete pServer;
+			pServer = nullptr;
+		}
+		if (pDns != nullptr) {
+			pDns->stop();
+			delete pDns;
+			pDns = nullptr;
+		}
 
-			String ssid = wifiManager.getConfiguredSTASSID();
-			config->writeString(to_addr(EEPROMAddress::WIFI_SSID), ssid.c_str());
+		// Reset parameter tracking
+		_pCustomTZDropdown = nullptr;
+		_pCustomTZHidden = nullptr;
+
+		// Ensure WiFi is completely stopped
+		WiFi.disconnect(true, true);  // disconnect and erase credentials
+		WiFi.mode(WIFI_OFF);
+		delay(500);  // longer delay to ensure clean state
+
+		// Create fresh server and WiFiManager instances
+		pServer = new AsyncWebServer(80);
+		pDns = new DNSServer();
+		pWifiManager = new AsyncWiFiManager(pServer, pDns);
+
+		// Configure WiFiManager BEFORE starting portal
+		pWifiManager->setTryConnectDuringConfigPortal(false);  // Don't try to connect while portal is open
+		pWifiManager->setConfigPortalTimeout(300);  // 5 minute timeout
+		pWifiManager->setBreakAfterConfig(true);  // Exit portal after config saved (even if connection fails)
+		pWifiManager->setDebugOutput(true);
+		
+		// Set static IP for the AP (helps with captive portal detection)
+		pWifiManager->setAPStaticIPConfig(IPAddress(192,168,4,1), IPAddress(192,168,4,1), IPAddress(255,255,255,0));
+
+		// Captive portal detection handlers - redirect common OS check URLs to portal
+		pServer->on("/hotspot-detect.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+		pServer->on("/generate_204", HTTP_GET, [](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+		pServer->on("/gen_204", HTTP_GET, [](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+		pServer->on("/connecttest.txt", HTTP_GET, [](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+		pServer->on("/redirect", HTTP_GET, [](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+		pServer->on("/fwlink", HTTP_GET, [](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+		pServer->on("/success.txt", HTTP_GET, [](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+
+		// Add parameters (only once per WiFiManager instance)
+		int curTimezoneID = config->read(ConfigKey::TIMEZONE_ID);
+		
+		pWifiManager->addParameter(new AsyncWiFiManagerParameter("<br/>NTP config:"));
+
+		char convertedValue[6];
+		sprintf(convertedValue, "%d", curTimezoneID);
+		_pCustomTZHidden = new AsyncWiFiManagerParameter("key_custom", "Will be hidden", convertedValue, 3);
+		pWifiManager->addParameter(_pCustomTZHidden);
+
+		_sDropDownTimeZoneHTML = buildTimezoneCheckboxOption(curTimezoneID);
+		_pCustomTZDropdown = new AsyncWiFiManagerParameter(_sDropDownTimeZoneHTML.c_str());
+		pWifiManager->addParameter(_pCustomTZDropdown);
+
+		// Catch-all: redirect unknown requests to portal
+		pServer->onNotFound([](AsyncWebServerRequest *request) {
+			request->redirect("http://192.168.4.1");
+		});
+
+		LOG_I("Starting config portal: %s", _sIdentifier);
+		LOG_I("Connect to AP and browse to http://192.168.4.1");
+		
+		bool portalResult = pWifiManager->startConfigPortal(_sIdentifier);
+		
+		// Check if user submitted config (SSID will be set even if connection failed)
+		String ssid = pWifiManager->getConfiguredSTASSID();
+		
+		if (ssid.length() > 0) {
+			// User submitted config - save it regardless of connection result
+			config->writeString(ConfigKey::WIFI_SSID, ssid.c_str());
 			LOG_I("SSID: %s", ssid.c_str());
 
-			String pwd = wifiManager.getConfiguredSTAPassword();
-			config->writeString(to_addr(EEPROMAddress::WIFI_PSWD), pwd.c_str());
-			LOG_I("PSWD: %s", pwd.c_str());
+			String pwd = pWifiManager->getConfiguredSTAPassword();
+			config->writeString(ConfigKey::WIFI_PSWD, pwd.c_str());
+			LOG_I("PSWD: (saved, %d chars)", pwd.length());
 
 			if (_pCustomTZHidden != nullptr) {
 				_nSelectedTimeZoneID = String(_pCustomTZHidden->getValue()).toInt();
 				LOG_I("Timezone select: %s", timezones[_nSelectedTimeZoneID].name);
-	            config->write(to_addr(EEPROMAddress::TIMEZONE_ID), _nSelectedTimeZoneID);
+				config->write(ConfigKey::TIMEZONE_ID, _nSelectedTimeZoneID);
 			}
 
 			config->flushDeferredSaving(true);
-
-			// save and reboot ESP
-			// LOG_I("New config from captive portal! Rebooting ESP now....");
-			// // _inst->flushDeferredSaving(true);
+			
+			LOG_I("Configuration saved, restarting...");
+			delay(500);  // Allow log to flush
 			ESP.restart();
 
 			return true;
 		}
 
-		server.reset();
-		server.end();
-
+		if (portalResult) {
+			LOG_I("Portal closed successfully but no SSID configured");
+		} else {
+			LOG_I("Config portal timed out or closed without config");
+		}
 		return false;
 	}
 
-	void APController::resetWifiSettingsAndReboot(AsyncWiFiManager* pWiFiManager) {
-		pWiFiManager->resetSettings();
+	void APController::resetWifiSettingsAndReboot(AsyncWiFiManager* wifiMgr) {
+		if (wifiMgr != nullptr) {
+			wifiMgr->resetSettings();
+		}
 		delay(3000);
 		ESP.restart();
 	}
