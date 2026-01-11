@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "Controller.h"
+#include "improv_wifi.h"
 
 siebenuhr::Controller *g_controller = nullptr;
 
@@ -53,6 +54,9 @@ void setup() {
 
     g_controller->loadConfiguration();
     
+    // Initialize Improv Wi-Fi for web flasher provisioning
+    siebenuhr::initImprov(g_controller->getConfiguration());
+    
     // Enable sensors based on build flags
     g_controller->setAutoBrightnessEnabled(AUTO_BRIGHTNESS_ENABLED);
     g_controller->setPowerMonitoringEnabled(POWER_MONITORING_ENABLED);
@@ -62,6 +66,9 @@ void setup() {
 }
 
 void loop() {
+    // Handle Improv Wi-Fi Serial commands (for web flasher provisioning)
+    siebenuhr::handleImprov();
+    
     if (g_controller != nullptr) {
         g_controller->update();
     }

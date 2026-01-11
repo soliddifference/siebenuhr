@@ -2,6 +2,7 @@
 
 #include "timezone.h"
 #include "accesspoint.h"
+#include "improv_wifi.h"
 #include "siebenuhr_color.h"
 
 #include <WiFi.h>
@@ -62,28 +63,33 @@ namespace siebenuhr {
                 return true;
             }
 
+            // Check if we have valid credentials (not "undefined1")
+            if (!siebenuhr::hasValidWifiCredentials()) {
+                LOG_I("WiFi not configured, waiting for Improv or AP setup");
+                setRenderState(RenderState::WIFI, "uiFi");
+                return false;
+            }
+
             WiFi.mode(WIFI_STA);
 
             String SSID = m_configuration.readString(ConfigKey::WIFI_SSID);
             String PSWD = m_configuration.readString(ConfigKey::WIFI_PSWD);
             LOG_I("WiFi SSID: %s", SSID.c_str());
 
-            if (SSID.length() != 0) {
-                WiFi.begin(SSID.c_str(), PSWD.c_str());
-                LOG_I("Connecting to WiFi (%s)..", SSID.c_str());
+            WiFi.begin(SSID.c_str(), PSWD.c_str());
+            LOG_I("Connecting to WiFi (%s)..", SSID.c_str());
 
-                int ConnectRetries = 0;
-                while (WiFi.status() != WL_CONNECTED && ConnectRetries < 20) {
-                    ConnectRetries++;
-                    LOG_I(".. retry #%d", ConnectRetries);
-                    delay(500);
-                }
+            int ConnectRetries = 0;
+            while (WiFi.status() != WL_CONNECTED && ConnectRetries < 20) {
+                ConnectRetries++;
+                LOG_I(".. retry #%d", ConnectRetries);
+                delay(500);
+            }
 
-                if (WiFi.status() == WL_CONNECTED) {
-                    m_wifiEnabled = true;
-                    LOG_I("Wifi connected.");
-                    return true;
-                }
+            if (WiFi.status() == WL_CONNECTED) {
+                m_wifiEnabled = true;
+                LOG_I("Wifi connected.");
+                return true;
             }
         }
 
@@ -144,12 +150,26 @@ namespace siebenuhr {
         }
         else if (m_renderState == RenderState::WIFI)
         {
-            // Only start AP once when entering WIFI state
-            // The AP will restart the device on success, or stay in portal mode
+            // In WIFI state, we wait for either:
+            // 1. Improv provisioning via Serial (handled in loop by handleImprov())
+            // 2. Timeout, then start AP mode as fallback
+            //
+            // Wait 30 seconds before starting AP to give Improv a chance
             static bool apStarted = false;
-            if (!apStarted && millis()-m_renderStateChange > 2000)
+            static bool loggedWaiting = false;
+            
+            unsigned long waitTime = millis() - m_renderStateChange;
+            
+            if (!loggedWaiting && waitTime > 1000) {
+                loggedWaiting = true;
+                LOG_I("Waiting for Improv provisioning (AP starts in 30s)...");
+            }
+            
+            // Start AP after 30 seconds if no Improv provisioning
+            if (!apStarted && waitTime > 30000)
             {
                 apStarted = true;
+                LOG_I("Starting AP mode for manual configuration...");
                 if (APController::getInstance()->begin(&m_configuration)) {
                     // Config saved and device will restart (this line won't be reached)
                 } else {
