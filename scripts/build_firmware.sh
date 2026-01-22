@@ -18,7 +18,8 @@ fi
 echo "Building firmware (version: $VERSION)..."
 echo ""
 
-# Build both environments
+# Build both environments with version embedded in firmware
+export PLATFORMIO_BUILD_FLAGS="-D SIEBENUHR_VERSION='\"${VERSION}\"'"
 pio run -e esp32-mini -e esp32-regular
 
 echo ""

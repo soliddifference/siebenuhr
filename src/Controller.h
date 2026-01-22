@@ -4,7 +4,11 @@
 #include "configuration.h"
 #include <ezTime.h>
 
-#define SIEBENUHR_VERSION "1.1.1"
+// Version is set via build flag (-D SIEBENUHR_VERSION=...) in platformio.ini
+// CI builds override this with the release tag version
+#ifndef SIEBENUHR_VERSION
+#define SIEBENUHR_VERSION "dev"
+#endif
 
 namespace siebenuhr {
 

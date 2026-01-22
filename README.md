@@ -1,6 +1,7 @@
 # Siebenuhr
 
 [![Tests](https://github.com/soliddifference/siebenuhr/actions/workflows/test.yml/badge.svg)](https://github.com/soliddifference/siebenuhr/actions/workflows/test.yml)
+[![Release](https://github.com/soliddifference/siebenuhr/actions/workflows/build-release.yml/badge.svg)](https://github.com/soliddifference/siebenuhr/actions/workflows/build-release.yml)
 
 > This repository contains the open-source firmware for the Siebenuhr wall clock and mini clock. If you're using Home Assistant, we have [an ESPHome integration](https://github.com/soliddifference/siebenuhr_esphome). Both can be ordered from the web shop at [soliddifference.com](https://soliddifference.com/).
 
@@ -166,9 +167,22 @@ pio test -e native -v
 
 ## Version
 
-Current version: **1.1.0** (defined in `src/Controller.h`)
+Current version: **1.1.1** (defined in `platformio.ini` as `custom_version`)
+
+The version is injected at build time via the `-D SIEBENUHR_VERSION` build flag. CI builds automatically use the git tag version.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## Building Release Firmware
+
+To build firmware binaries for the web flasher:
+
+```bash
+# Build and copy to a destination directory
+./scripts/build_firmware.sh ~/path/to/support-site/downloads 1.1.1
+```
+
+This creates merged binaries (`firmware-mini-{version}.bin`, `firmware-regular-{version}.bin`) with the version embedded in the firmware.
 
 ## License
 

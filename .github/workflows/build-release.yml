@@ -1,0 +1,82 @@
+# Build firmware and create GitHub release when a version tag is pushed
+# Triggers notify-support-site.yml after the release is published
+
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build and Release Firmware
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Checkout siebenuhr_core library
+        uses: actions/checkout@v4
+        with:
+          repository: soliddifference/siebenuhr_core
+          # TODO: Change to 'v1.1.0' tag after core library release
+          ref: refactor-1.1.0
+          path: tmp/siebenuhr_core
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-release-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-release-${{ runner.os }}-
+      
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+      
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Remove 'v' prefix from tag
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Build firmware (both variants)
+        env:
+          PLATFORMIO_BUILD_FLAGS: -D SIEBENUHR_VERSION='"${{ steps.version.outputs.version }}"'
+        run: pio run -e esp32-mini -e esp32-regular
+      
+      - name: Prepare release assets
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # Copy merged binaries with release naming convention
+          cp .pio/build/esp32-mini/firmware-esp32-mini-merged.bin \
+             "firmware-mini-${VERSION}.bin"
+          
+          cp .pio/build/esp32-regular/firmware-esp32-regular-merged.bin \
+             "firmware-regular-${VERSION}.bin"
+          
+          # List assets for verification
+          echo "Release assets:"
+          ls -lh firmware-*.bin
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            firmware-mini-${{ steps.version.outputs.version }}.bin
+            firmware-regular-${{ steps.version.outputs.version }}.bin
+          generate_release_notes: true
+          draft: false
