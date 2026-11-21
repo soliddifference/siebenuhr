@@ -24,6 +24,8 @@ A smaller version of Siebenuhr, perfect for desks and bedside tables.
 ## Requirements
 
 - ESP32 (tested with ESP32-DOIT-DEVKIT-V1)
+- Controller v3 (ESP32-S3) is not supported yet: [hardware/controller-v3.md](hardware/controller-v3.md) has its pins,
+  parts and what the firmware has to do for it
 - PlatformIO Core or PlatformIO IDE extension for VS Code
 - Python 3.x
 
