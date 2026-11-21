@@ -2,6 +2,12 @@
 
 All notable changes to the Siebenuhr firmware will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- `hardware/controller-v3.md`: the controller v3 hardware (v3.2.1, ESP32-S3) and what the firmware must do to
+  support it, with renders of the board
+
 ## [1.1.0] - 2026-01-09
 
 Major refactor integrating the `siebenuhr_core` library for shared functionality with ESPHome.
